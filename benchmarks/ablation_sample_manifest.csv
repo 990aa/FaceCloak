@@ -1,0 +1,7 @@
+image_id,modality,image_path
+obama_a_face,face,../tests/fixtures/faces/obama_a.jpg
+obama_b_face,face,../tests/fixtures/faces/obama_b.jpg
+george_face,face,../tests/fixtures/faces/george_a.jpg
+obama_a_general,general,../tests/fixtures/faces/obama_a.jpg
+obama_b_general,general,../tests/fixtures/faces/obama_b.jpg
+george_general,general,../tests/fixtures/faces/george_a.jpg

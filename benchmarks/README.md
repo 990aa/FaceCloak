@@ -2,6 +2,8 @@
 
 This folder contains manifest files used by `eval.py`.
 
+It also contains ablation manifests used by `ablation.py`.
+
 ## Why this exists
 
 The benchmark is designed to address the rigging objection directly:
@@ -32,9 +34,26 @@ Optional columns:
 
 - `pair_type` (`standard` or `near_duplicate`)
 
+## Ablation manifest format
+
+Required columns:
+
+- `image_id`
+- `modality` (`face` or `general`)
+- `image_path`
+
+For full Phase 13 runs, use a fixed held-out set with exactly 40 rows:
+
+- 20 face rows
+- 20 general rows
+
+The ablation runner enforces this by default. Use `--allow-small-set` only for quick smoke tests.
+
 ## Example
 
 See `sample_manifest.csv` for a working minimal example that references local test fixtures.
+
+For ablations, see `ablation_sample_manifest.csv`.
 
 ## Run
 
@@ -43,3 +62,9 @@ python eval.py --manifest benchmarks/sample_manifest.csv --output-csv benchmark_
 ```
 
 For a full benchmark, point `--manifest` to your 50-100 image-pair manifest.
+
+Run ablations:
+
+```powershell
+python ablation.py --manifest benchmarks/ablation_sample_manifest.csv --output-dir ablations --allow-small-set --skip-convnext
+```

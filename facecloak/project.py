@@ -33,6 +33,7 @@ PINNED_RUNTIME_DEPENDENCIES: tuple[tuple[str, str], ...] = (
 SPACE_UPLOAD_ALLOW_PATTERNS: tuple[str, ...] = (
     "app.py",
     "eval.py",
+    "ablation.py",
     "README.md",
     "requirements.txt",
     "pyproject.toml",
