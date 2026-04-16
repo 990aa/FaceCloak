@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
 import platform
 
-from facecloak.project import PHASE_LABEL, PHASE_SUMMARY, TORCH_CACHE_DIR
+from facecloak.project import TORCH_CACHE_DIR
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,7 +24,6 @@ class RuntimeReport:
     device: str
     tensor_sanity: tuple[int, ...]
     torch_cache_dir: str
-    phase: str
     status: str
     notes: str
 
@@ -58,9 +57,8 @@ def collect_runtime_report() -> RuntimeReport:
         device=device,
         tensor_sanity=tensor_sanity,
         torch_cache_dir=str(TORCH_CACHE_DIR),
-        phase=PHASE_LABEL,
         status=status,
-        notes="CPU execution remains the intended deployment target for the Hugging Face Space.",
+        notes="CPU execution is the intended deployment target for the Hugging Face Space.",
     )
 
 
@@ -71,7 +69,6 @@ def format_runtime_markdown(report: RuntimeReport) -> str:
     return "\n".join(
         [
             "### Runtime Diagnostics",
-            f"- Phase: {report.phase}",
             f"- Status: {report.status}",
             f"- Python: `{report.python_version}`",
             f"- Platform: `{report.operating_system}`",
@@ -87,8 +84,6 @@ def format_runtime_markdown(report: RuntimeReport) -> str:
             f"- Tensor Sanity: `[{tensor_label}]`",
             f"- Torch Cache: `{report.torch_cache_dir}`",
             f"- Notes: {report.notes}",
-            "",
-            PHASE_SUMMARY,
         ]
     )
 

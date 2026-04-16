@@ -1,10 +1,19 @@
+"""Integration tests exercising the real FaceNet models on portrait fixtures."""
+
+from __future__ import annotations
+
 from pathlib import Path
 
 from PIL import Image
 import pytest
 
 from facecloak.cloaking import CloakHyperparameters, cloak_face_tensor
-from facecloak.pipeline import cosine_similarity, detect_primary_face, extract_embedding_numpy
+from facecloak.pipeline import (
+    cosine_similarity,
+    detect_primary_face,
+    extract_embedding_numpy,
+    verify_cloak,
+)
 
 FIXTURE_DIR = Path("tests/fixtures/faces")
 
@@ -33,8 +42,37 @@ def test_real_face_cloaking_substantially_lowers_similarity() -> None:
 
     result = cloak_face_tensor(
         detected.tensor,
-        parameters=CloakHyperparameters(epsilon=0.03, num_steps=15, l2_lambda=0.01),
+        parameters=CloakHyperparameters(
+            epsilon=0.03,
+            alpha_fraction=0.1,
+            num_steps=50,
+            l2_lambda=0.01,
+        ),
     )
 
     assert result.final_similarity < 0.35
     assert result.delta_l_inf <= 0.03 + 1e-6
+
+
+@pytest.mark.integration
+def test_verify_cloak_uses_fresh_mtcnn_pass_on_real_image() -> None:
+    """Post-cloak verification must independently re-detect the cloaked image."""
+    obama_a = Image.open(FIXTURE_DIR / "obama_a.jpg").convert("RGB")
+    detected = detect_primary_face(obama_a)
+    original_embedding = extract_embedding_numpy(detected.tensor)
+
+    result = cloak_face_tensor(
+        detected.tensor,
+        parameters=CloakHyperparameters(epsilon=0.05, num_steps=80),
+    )
+
+    verification = verify_cloak(result.cloaked_face_image, original_embedding)
+
+    # Similarity should be lower after cloaking
+    assert verification.similarity < 0.9
+    # The result must contain a human-readable label
+    assert len(verification.label) > 0
+    # A strong cloak can push cosine similarity negative (anti-correlated vectors).
+    # pct = similarity * 100 and is NOT clamped — that is intentional.
+    assert verification.pct == pytest.approx(verification.similarity * 100.0, abs=0.01)
+
