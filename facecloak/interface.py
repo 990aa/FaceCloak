@@ -18,6 +18,7 @@ from facecloak.pipeline import (
     classify_image_type,
     cosine_similarity,
     detect_primary_face,
+    ensure_rgb,
     extract_clip_embedding_numpy,
     extract_embedding_numpy,
     interpret_clip_score,
@@ -200,134 +201,190 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
             "No image provided. Please upload a photo before clicking Generate Cloak."
         )
 
-    # ── Step 1: detect face ─────────────────────────────────────────────── #
-    try:
-        detected = detect_primary_face(image)
-    except FaceCloakError as exc:
-        raise gr.Error(str(exc)) from exc
+    route = classify_image_type(image)
 
-    orig_embedding = extract_embedding_numpy(detected.tensor)
-
-    # Compute baseline similarity to itself (should be ~1.0 / 100%)
-    orig_sim = cosine_similarity(orig_embedding, orig_embedding)
-    orig_label, _ = interpret_score(orig_sim)
-    orig_score_text = _score_line("Original — before cloaking", orig_sim)
-
-    # Accumulate progress lines for the status box
-    progress_lines: list[str] = [
-        "Face detected. Starting adversarial optimization…",
-        f"  Detection confidence: {_format_detection_probability(detected.probability)}",
-        "",
-    ]
-
-    # ── Step 2-N: PGD with per-step progress updates ─────────────────────  #
+    # ── Step 1: hyperparameters and progress setup ─────────────────────── #
     params = CloakHyperparameters(
         epsilon=float(epsilon),
         alpha_fraction=float(alpha_fraction),
         num_steps=int(num_steps),
         l2_lambda=0.01,
+        face_weight=1.0,
+        clip_weight=1.0,
     )
 
-    # We'll store the result here once the loop finishes
-    cloak_result_holder: list = []
-
-    def _on_progress(step: int, total: int, sim: float) -> None:
-        pct = sim * 100.0
-        line = f"Step {step:>4d} of {total}: Match score → {pct:5.1f}%"
-        progress_lines.append(line)
-
-    # We can't yield inside the callback, so we run cloaking synchronously
-    # and yield a progress snapshot every N steps via an intermediate
-    # generator approach using a thread or simply run and batch-yield.
-    #
-    # For Gradio's streaming generator pattern we use a list that
-    # the callback appends to, then drain it between yields.
-    #
-    # Practical approach: run the full loop collecting all histories,
-    # then replay the progress lines as a stream on the final yield.
-    # For a true real-time feel we split into chunks.
-
-    REPORT_EVERY = max(1, int(num_steps) // 20)  # yield ~20 intermediate updates
+    progress_lines: list[str] = [route.display_label]
+    progress_lines.append(
+        f"  Face detector confidence: {_format_detection_probability(route.detector_probability)}"
+    )
+    progress_lines.append("")
 
     class _ProgressAccumulator:
-        def __init__(self) -> None:
+        def __init__(self, metric_name: str) -> None:
+            self.metric_name = metric_name
             self.lines: list[str] = []
-            self.pending: list[str] = []
 
         def __call__(self, step: int, total: int, sim: float) -> None:
-            line = f"Step {step:>4d} of {total}: Match score → {sim * 100.0:5.1f}%"
+            line = (
+                f"Step {step:>4d} of {total}: {self.metric_name} similarity"
+                f" → {sim * 100.0:5.1f}%"
+            )
             self.lines.append(line)
-            self.pending.append(line)
 
-    acc = _ProgressAccumulator()
+    clip_model = get_clip_model()
 
+    # ── Face route: combined FaceNet + CLIP attack ─────────────────────── #
+    if route.image_type == "face":
+        detected = route.detected_face
+        if detected is None:
+            try:
+                detected = detect_primary_face(image)
+            except FaceCloakError as exc:
+                raise gr.Error(str(exc)) from exc
+
+        original_facenet_embedding = extract_embedding_numpy(detected.tensor)
+        original_clip_embedding = extract_clip_embedding_numpy(detected.image)
+
+        orig_score_text = "\n".join(
+            [
+                _score_line("FaceNet baseline — before cloaking", 1.0),
+                _score_line("CLIP baseline — before cloaking", 1.0),
+            ]
+        )
+
+        acc = _ProgressAccumulator("FaceNet")
+        try:
+            result = cloak_face_tensor(
+                detected.tensor,
+                parameters=params,
+                clip_model=clip_model,
+                progress_callback=acc,
+            )
+        except FaceCloakError as exc:
+            raise gr.Error(str(exc)) from exc
+
+        chunk_size = max(1, len(acc.lines) // 20)
+        status_so_far = "\n".join(progress_lines) + "\n"
+        for i in range(0, len(acc.lines), chunk_size):
+            chunk = acc.lines[i : i + chunk_size]
+            status_so_far += "\n".join(chunk) + "\n"
+            yield (
+                None,
+                None,
+                None,
+                orig_score_text,
+                "Optimizing…",
+                status_so_far,
+                None,
+            )
+
+        try:
+            verification = verify_cloak(
+                result.cloaked_face_image,
+                original_facenet_embedding,
+            )
+            final_face_similarity = verification.similarity
+            face_label = verification.label
+            face_warning = verification.warning
+        except FaceCloakError:
+            final_face_similarity = result.final_similarity
+            face_label, face_warning = interpret_score(final_face_similarity)
+
+        cloaked_clip_embedding = extract_clip_embedding_numpy(result.cloaked_face_image)
+        final_clip_similarity = cosine_similarity(
+            original_clip_embedding,
+            cloaked_clip_embedding,
+        )
+        clip_label, clip_warning = interpret_clip_score(final_clip_similarity)
+
+        cloak_score_text = "\n".join(
+            [
+                _score_line(f"FaceNet — {face_label}", final_face_similarity),
+                _score_line(f"CLIP — {clip_label}", final_clip_similarity),
+            ]
+        )
+
+        warning_lines = [
+            warning for warning in (face_warning, clip_warning) if warning is not None
+        ]
+        warning_msg = ""
+        if warning_lines:
+            warning_msg = "\n" + "\n".join(f"WARNING: {line}" for line in warning_lines)
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        result.cloaked_face_image.save(tmp.name, format="PNG")
+        download_path = tmp.name
+
+        status_final = (
+            status_so_far
+            + f"\nDone. Final FaceNet similarity: {final_face_similarity * 100.0:.1f}%"
+            + f"\nFinal CLIP similarity: {final_clip_similarity * 100.0:.1f}%"
+            + warning_msg
+        )
+
+        yield (
+            detected.image,
+            result.cloaked_face_image,
+            result.amplified_diff,
+            orig_score_text,
+            cloak_score_text,
+            status_final,
+            download_path,
+        )
+        return
+
+    # ── General route: CLIP-only universal cloaking ────────────────────── #
+    original_clip_embedding = extract_clip_embedding_numpy(image)
+    orig_score_text = _score_line("CLIP baseline — before cloaking", 1.0)
+
+    acc = _ProgressAccumulator("CLIP")
     try:
-        result = cloak_face_tensor(
-            detected.tensor,
+        result = cloak_general_image(
+            image,
+            clip_model=clip_model,
             parameters=params,
             progress_callback=acc,
         )
     except FaceCloakError as exc:
         raise gr.Error(str(exc)) from exc
 
-    # ── Re-play progress as a streaming generator ─────────────────────── #
-    header_lines = progress_lines.copy()
-    all_lines = header_lines + acc.lines
-
-    # Stream intermediate updates in chunks
     chunk_size = max(1, len(acc.lines) // 20)
-    status_so_far = "\n".join(header_lines) + "\n"
+    status_so_far = "\n".join(progress_lines) + "\n"
     for i in range(0, len(acc.lines), chunk_size):
         chunk = acc.lines[i : i + chunk_size]
         status_so_far += "\n".join(chunk) + "\n"
         yield (
-            None,  # orig_img – not yet
-            None,  # cloaked_img – not yet
-            None,  # diff_img – not yet
+            None,
+            None,
+            None,
             orig_score_text,
             "Optimizing…",
             status_so_far,
-            None,  # download path – not yet
+            None,
         )
 
-    # ── Post-cloak verification (Step 21) ─────────────────────────────── #
-    try:
-        verification = verify_cloak(
-            result.cloaked_face_image,
-            orig_embedding,
-        )
-        cloak_score_text = _score_line(verification.label, verification.similarity)
-    except FaceCloakError:
-        # If re-detection fails on the cloaked image, use the PGD final sim
-        cloak_sim = result.final_similarity
-        cloak_label, _ = interpret_score(cloak_sim)
-        cloak_score_text = _score_line(cloak_label, cloak_sim)
-        verification = None
+    cloaked_clip_embedding = extract_clip_embedding_numpy(result.cloaked_image)
+    final_clip_similarity = cosine_similarity(original_clip_embedding, cloaked_clip_embedding)
+    clip_label, clip_warning = interpret_clip_score(final_clip_similarity)
+    cloak_score_text = _score_line(f"CLIP — {clip_label}", final_clip_similarity)
 
-    # ── Step 33: partial-failure warning ─────────────────────────────── #
-    final_sim = verification.similarity if verification else result.final_similarity
     warning_msg = ""
-    if final_sim > 0.5:
-        warning_msg = (
-            "\nWARNING: Partial cloak achieved. "
-            "Try increasing the number of steps or the epsilon value."
-        )
+    if clip_warning:
+        warning_msg = f"\nWARNING: {clip_warning}"
 
-    # ── Save cloaked image for download ───────────────────────────────── #
     tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-    result.cloaked_face_image.save(tmp.name, format="PNG")
+    result.cloaked_image.save(tmp.name, format="PNG")
     download_path = tmp.name
 
     status_final = (
         status_so_far
-        + f"\nDone. Final match score: {final_sim * 100.0:.1f}%"
+        + f"\nDone. Final CLIP similarity: {final_clip_similarity * 100.0:.1f}%"
         + warning_msg
     )
 
-    # ── Final yield with all outputs filled in ────────────────────────── #
     yield (
-        detected.image,  # original aligned face
-        result.cloaked_face_image,
+        result.original_image,
+        result.cloaked_image,
         result.amplified_diff,
         orig_score_text,
         cloak_score_text,
@@ -348,22 +405,47 @@ def compare_faces(image_a, image_b):
                 "Please provide both images before running a similarity check."
             )
 
-        detected_a = detect_primary_face(image_a)
-        detected_b = detect_primary_face(image_b)
-        embedding_a = extract_embedding_numpy(detected_a.tensor)
-        embedding_b = extract_embedding_numpy(detected_b.tensor)
-        similarity = cosine_similarity(embedding_a, embedding_b)
-        label, _ = interpret_score(similarity)
-        summary = "\n".join(
-            [
-                "### Similarity Result",
-                f"- Cosine Similarity: `{similarity:.4f}` ({_pct(similarity)})",
-                f"- Verdict: **{label}**",
-                f"- Image A Detection Confidence: `{_format_detection_probability(detected_a.probability)}`",
-                f"- Image B Detection Confidence: `{_format_detection_probability(detected_b.probability)}`",
-            ]
-        )
-        return detected_a.image, detected_b.image, similarity, summary
+        route_a = classify_image_type(image_a)
+        route_b = classify_image_type(image_b)
+
+        clip_a = extract_clip_embedding_numpy(image_a)
+        clip_b = extract_clip_embedding_numpy(image_b)
+        clip_similarity = cosine_similarity(clip_a, clip_b)
+        clip_label, _ = interpret_clip_score(clip_similarity)
+
+        lines = [
+            "### Similarity Result",
+            f"- CLIP Cosine Similarity: `{clip_similarity:.4f}` ({_pct(clip_similarity)})",
+            f"- CLIP Verdict: **{clip_label}**",
+            f"- Image A Type: `{route_a.image_type}`",
+            f"- Image B Type: `{route_b.image_type}`",
+            f"- Image A Detection Confidence: `{_format_detection_probability(route_a.detector_probability)}`",
+            f"- Image B Detection Confidence: `{_format_detection_probability(route_b.detector_probability)}`",
+        ]
+
+        if route_a.image_type == "face" and route_b.image_type == "face":
+            if route_a.detected_face is None or route_b.detected_face is None:
+                detected_a = detect_primary_face(image_a)
+                detected_b = detect_primary_face(image_b)
+            else:
+                detected_a = route_a.detected_face
+                detected_b = route_b.detected_face
+
+            embedding_a = extract_embedding_numpy(detected_a.tensor)
+            embedding_b = extract_embedding_numpy(detected_b.tensor)
+            facenet_similarity = cosine_similarity(embedding_a, embedding_b)
+            facenet_label, _ = interpret_score(facenet_similarity)
+
+            lines.append(
+                f"- FaceNet Cosine Similarity: `{facenet_similarity:.4f}` ({_pct(facenet_similarity)})"
+            )
+            lines.append(f"- FaceNet Verdict: **{facenet_label}**")
+
+            summary = "\n".join(lines)
+            return detected_a.image, detected_b.image, clip_similarity, summary
+
+        summary = "\n".join(lines)
+        return ensure_rgb(image_a), ensure_rgb(image_b), clip_similarity, summary
     except FaceCloakError as exc:
         raise gr.Error(str(exc)) from exc
 
@@ -379,9 +461,9 @@ def build_demo() -> gr.Blocks:  # noqa: C901
         gr.Markdown(
             """
 # <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline; vertical-align:middle; margin-right:8px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> FaceCloak
-## Upload your photo. Watch AI become blind to your face.
+## Upload any image. Watch AI similarity collapse.
 
-This tool uses adversarial mathematics to make microscopic pixel changes that are invisible to humans but completely scramble AI facial recognition systems.
+This tool uses adversarial mathematics to make microscopic pixel changes that are invisible to humans but can disrupt AI similarity systems for faces, scenes, products, and documents.
 """,
             elem_id="hero",
         )
@@ -526,7 +608,7 @@ The defaults work well for most photos. Only adjust if you are experimenting.
         # ── Compare Faces tab ─────────────────────────────────────────── #
         with gr.Tab("Compare Two Photos"):
             gr.Markdown(
-                "Upload two photos to measure how similar they look to an AI facial recognition system.",
+                "Upload two images to measure CLIP similarity, and FaceNet similarity when both are confident face images.",
                 elem_classes=["panel"],
             )
             with gr.Row():
@@ -534,10 +616,10 @@ The defaults work well for most photos. Only adjust if you are experimenting.
                 compare_image_b = gr.Image(label="Photo B", type="pil")
             with gr.Row():
                 aligned_a = gr.Image(
-                    label="Detected Face A", type="pil", interactive=False
+                    label="Processed Image A", type="pil", interactive=False
                 )
                 aligned_b = gr.Image(
-                    label="Detected Face B", type="pil", interactive=False
+                    label="Processed Image B", type="pil", interactive=False
                 )
             compare_button = gr.Button("Compare Faces", variant="primary")
             pair_similarity = gr.Number(
@@ -566,8 +648,9 @@ The defaults work well for most photos. Only adjust if you are experimenting.
 ## How it works
 
 FaceCloak applies **Projected Gradient Descent (PGD)** directly to your image pixels.
-It computes, for each pixel, the exact direction that will maximally confuse a FaceNet
-recognition model, then nudges each pixel in that direction by a tiny, controlled amount.
+It computes, for each pixel, the exact direction that will maximally disrupt similarity
+embeddings (CLIP for all images, plus FaceNet for confident face inputs), then nudges
+each pixel in that direction by a tiny, controlled amount.
 The "projection" step keeps every pixel within a tight budget so the changes are
 mathematically bounded to be imperceptible.
 
@@ -578,7 +661,8 @@ mathematically bounded to be imperceptible.
 - **Extreme head angles** (profile shots, 45°+) may reduce MTCNN detection confidence.
 - **Glasses and heavy occlusion** can weaken the cloak because the embedding relies
   on periocular features that are partially hidden.
-- This tool targets **FaceNet (VGGFace2)**. Other recognition models may behave differently.
+- Face images are scored with **FaceNet + CLIP**; non-face images are scored with **CLIP**.
+    Transfer to unseen production systems is expected but cannot be guaranteed for every model family.
 
 ## Privacy
 

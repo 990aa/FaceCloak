@@ -18,6 +18,7 @@ class RuntimeReport:
     facenet_pytorch_version: str
     gradio_version: str
     huggingface_hub_version: str
+    transformers_version: str
     numpy_version: str
     pillow_version: str
     cuda_available: bool
@@ -51,6 +52,7 @@ def collect_runtime_report() -> RuntimeReport:
         facenet_pytorch_version=_installed_version("facenet-pytorch"),
         gradio_version=_installed_version("gradio"),
         huggingface_hub_version=_installed_version("huggingface-hub"),
+        transformers_version=_installed_version("transformers"),
         numpy_version=_installed_version("numpy"),
         pillow_version=_installed_version("pillow"),
         cuda_available=cuda_available,
@@ -79,6 +81,7 @@ def format_runtime_markdown(report: RuntimeReport) -> str:
             f"- Pillow: `{report.pillow_version}`",
             f"- Gradio: `{report.gradio_version}`",
             f"- huggingface-hub: `{report.huggingface_hub_version}`",
+            f"- transformers: `{report.transformers_version}`",
             f"- CUDA Available: `{cuda_label}`",
             f"- Active Device: `{report.device}`",
             f"- Tensor Sanity: `[{tensor_label}]`",

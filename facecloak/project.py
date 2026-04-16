@@ -10,8 +10,8 @@ PROJECT_TAGLINE = "Adversarial Pixel Poisoning for Biometric Privacy Preservatio
 PHASE_LABEL = "FaceCloak"
 PHASE_STATUS = "Ready"
 PHASE_SUMMARY = (
-    "Face detection, embedding extraction, cosine similarity scoring, "
-    "PGD-based face cloaking, and post-cloak verification are all implemented."
+    "Face/general routing, dual-backbone similarity (FaceNet + CLIP), "
+    "PGD-based universal cloaking, and post-cloak verification are implemented."
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +27,7 @@ PINNED_RUNTIME_DEPENDENCIES: tuple[tuple[str, str], ...] = (
     ("scikit-image", "0.22.0"),
     ("gradio", "6.12.0"),
     ("huggingface-hub", "1.10.2"),
+    ("transformers", "5.5.4"),
 )
 
 SPACE_UPLOAD_ALLOW_PATTERNS: tuple[str, ...] = (
