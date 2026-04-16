@@ -10,7 +10,9 @@ app_file: app.py
 suggested_hardware: cpu-basic
 ---
 
-# 🛡️ FaceCloak — Adversarial Biometric Privacy
+# FaceCloak — Adversarial Biometric Privacy
+
+[**Live Demo on Hugging Face Spaces**](https://huggingface.co/spaces/a-01a/facecloak)
 
 **Upload your photo. Watch AI become blind to your face.**
 
@@ -36,9 +38,9 @@ The following table demonstrates the drop in recognition confidence on standardi
 
 | Strength (ε) | Steps | Original Similarity | Cloaked Similarity | Result |
 |--------------|-------|---------------------|--------------------|--------|
-| 0.01 (Weak)  | 50    | 0.999               | 0.654              | ⚠️ Matched |
-| 0.03 (Normal)| 100   | 0.999               | 0.128              | ✅ Cloaked |
-| 0.05 (Strong)| 200   | 0.999               | -0.215             | ✅ Cloaked |
+| 0.01 (Weak)  | 50    | 0.999               | 0.654              | WARNING |
+| 0.03 (Normal)| 100   | 0.999               | 0.128              | SUCCESS |
+| 0.05 (Strong)| 200   | 0.999               | -0.215             | SUCCESS |
 
 ## Limitations & Ethical Considerations
 
@@ -60,3 +62,8 @@ uv run python app.py
 uv run pytest -v                   # unit tests
 uv run pytest -v -m integration    # tests with real portrait images
 ```
+
+## License
+
+MIT License
+Copyright (c) 990aa

@@ -31,28 +31,6 @@ APP_CSS = """
 
 body, .gradio-container {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-    color: #0f172a !important;
-    background: #f8fafc !important;
-}
-
-/* ── Background gradient ──────────────────────────────────────── */
-.gradio-container {
-    background:
-        radial-gradient(ellipse 80% 60% at 10% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 55%),
-        radial-gradient(ellipse 60% 50% at 90% 5%, rgba(244, 114, 182, 0.07) 0%, transparent 50%),
-        linear-gradient(160deg, #f0f4ff 0%, #faf5ff 45%, #fff7f0 100%) !important;
-    min-height: 100vh;
-}
-
-/* ── Force dark text everywhere ──────────────────────────────── */
-label, .label-wrap, .block > label,
-span, p, h1, h2, h3, h4, h5, h6,
-.markdown, .markdown p, .markdown li,
-.markdown h1, .markdown h2, .markdown h3,
-.svelte-1ed2p3z, .svelte-1gfkn6j,
-textarea, input, .gr-textbox textarea,
-.gr-number input, .gr-slider label {
-    color: #0f172a !important;
 }
 
 /* ── Hero section ────────────────────────────────────────────── */
@@ -71,32 +49,40 @@ textarea, input, .gr-textbox textarea,
 
 /* ── Panel cards ─────────────────────────────────────────────── */
 .panel {
-    background: rgba(255, 255, 255, 0.85) !important;
+    background: #ffffff !important;
     border: 1px solid rgba(99, 102, 241, 0.12) !important;
     border-radius: 16px !important;
     box-shadow: 0 4px 24px rgba(99, 102, 241, 0.07) !important;
     padding: 1rem 1.25rem !important;
-    color: #0f172a !important;
 }
 .panel *, .panel .markdown, .panel .markdown p, .panel .markdown li {
     color: #0f172a !important;
 }
 
-/* ── Accordion ───────────────────────────────────────────────── */
-.accordion, details, details summary {
-    background: rgba(248, 250, 252, 0.9) !important;
-    color: #334155 !important;
+/* ── Accordion (What do these settings mean?) ────────────────── */
+.accordion, details {
+    background: #1e293b !important;
     border-radius: 12px !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+details summary, details summary * {
+    color: #f8fafc !important;
+    font-weight: 600 !important;
 }
 details *, details .markdown, details .markdown p {
-    color: #334155 !important;
+    color: #e2e8f0 !important;
 }
 
-/* ── Sliders ─────────────────────────────────────────────────── */
-.gr-slider label, input[type=range] + span,
-.gr-slider .label-wrap span {
-    color: #334155 !important;
-    font-weight: 500;
+/* ── Sliders and settings ────────────────────────────────────── */
+.gr-slider label, .gr-slider .label-wrap span, input[type=range] + span {
+    color: #f8fafc !important;
+    font-weight: 600 !important;
+}
+
+.gr-slider {
+    background: #1e293b !important;
+    padding: 1rem !important;
+    border-radius: 12px !important;
 }
 
 /* ── Buttons ─────────────────────────────────────────────────── */
@@ -143,24 +129,18 @@ details *, details .markdown, details .markdown p {
     border-radius: 10px !important;
     color: #0f172a !important;
     border: 1px solid rgba(99, 102, 241, 0.2) !important;
-    background: rgba(255,255,255,0.9) !important;
-}
-
-/* ── Images ──────────────────────────────────────────────────── */
-.image-container img {
-    border-radius: 12px !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+    background: #ffffff !important;
 }
 
 /* ── Tab strip ───────────────────────────────────────────────── */
-.tab-nav button {
-    color: #475569 !important;
-    font-weight: 500 !important;
+button[role="tab"] {
+    color: #1e293b !important;
+    font-weight: 600 !important;
+    font-size: 1.05rem !important;
 }
-.tab-nav button.selected {
+button[role="tab"][aria-selected="true"] {
     color: #4f46e5 !important;
     border-bottom-color: #4f46e5 !important;
-    font-weight: 600 !important;
 }
 """
 
@@ -321,7 +301,7 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
     warning_msg = ""
     if final_sim > 0.5:
         warning_msg = (
-            "\n⚠️  Partial cloak achieved. "
+            "\nWARNING: Partial cloak achieved. "
             "Try increasing the number of steps or the epsilon value."
         )
 
@@ -390,7 +370,7 @@ def build_demo() -> gr.Blocks:  # noqa: C901
         # ── Hero ─────────────────────────────────────────────────────── #
         gr.Markdown(
             """
-# 🛡️ FaceCloak
+# <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline; vertical-align:middle; margin-right:8px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> FaceCloak
 ## Upload your photo. Watch AI become blind to your face.
 
 This tool uses adversarial mathematics to make microscopic pixel changes that are invisible to humans but completely scramble AI facial recognition systems.
@@ -401,7 +381,7 @@ This tool uses adversarial mathematics to make microscopic pixel changes that ar
         # ── Tabs ─────────────────────────────────────────────────────── #
         with gr.Tab("Generate Cloak"):
             # ── Input section ─────────────────────────────────────────── #
-            gr.Markdown("### 📸 Step 1 — Upload Your Photo", elem_classes=["panel"])
+            gr.Markdown("### <svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"display:inline; vertical-align:middle; margin-right:8px;\"><path d=\"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z\"></path><circle cx=\"12\" cy=\"13\" r=\"4\"></circle></svg> Step 1 — Upload Your Photo", elem_classes=["panel"])
 
             with gr.Row():
                 with gr.Column(scale=1):
@@ -417,7 +397,7 @@ This tool uses adversarial mathematics to make microscopic pixel changes that ar
                     )
 
                 with gr.Column(scale=1):
-                    gr.Markdown("### ⚙️ Step 2 — Adjust Settings (optional)")
+                    gr.Markdown("### <svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"display:inline; vertical-align:middle; margin-right:8px;\"><circle cx=\"12\" cy=\"12\" r=\"3\"></circle><path d=\"M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z\"></path></svg> Step 2 — Adjust Settings (optional)")
 
                     epsilon = gr.Slider(
                         minimum=0.01,
@@ -444,7 +424,7 @@ This tool uses adversarial mathematics to make microscopic pixel changes that ar
                         info="How aggressively each step adjusts pixels. 0.1 is a good default.",
                     )
 
-                    with gr.Accordion("🔬 What do these settings mean?", open=False):
+                    with gr.Accordion("What do these settings mean?", open=False):
                         gr.Markdown(
                             """
 **Perturbation Strength (epsilon):** Think of this as the maximum number of steps
@@ -478,7 +458,7 @@ The defaults work well for most photos. Only adjust if you are experimenting.
             )
 
             # ── Results section ───────────────────────────────────────── #
-            gr.Markdown("### 🎯 Results", elem_classes=["panel"])
+            gr.Markdown("### <svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"display:inline; vertical-align:middle; margin-right:8px;\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><circle cx=\"12\" cy=\"12\" r=\"6\"></circle><circle cx=\"12\" cy=\"12\" r=\"2\"></circle></svg> Results", elem_classes=["panel"])
 
             with gr.Row():
                 with gr.Column(scale=1):
@@ -516,7 +496,7 @@ The defaults work well for most photos. Only adjust if you are experimenting.
 
             with gr.Row(elem_id="download-btn"):
                 download_btn = gr.DownloadButton(
-                    label="⬇️  Download Cloaked Image",
+                    label="Download Cloaked Image",
                     variant="secondary",
                 )
 

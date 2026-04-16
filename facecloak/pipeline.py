@@ -192,13 +192,13 @@ def interpret_score(similarity: float) -> tuple[str, str | None]:
         ``None`` when the cloak fully succeeded; a guidance string otherwise.
     """
     if similarity > 0.7:
-        label = "⚠️ Face Matched — AI still recognizes you"
+        label = "WARNING: Face Matched — AI still recognizes you"
         warning = "Partial cloak only. Try increasing the number of steps or epsilon."
     elif similarity > 0.3:
-        label = "🔶 Partial Cloak — recognition weakened"
+        label = "PARTIAL: Partial Cloak — recognition weakened"
         warning = "Try increasing the number of steps or the epsilon value for a stronger cloak."
     else:
-        label = "✅ Identity Cloaked — AI cannot recognize you"
+        label = "SUCCESS: Identity Cloaked — AI cannot recognize you"
         warning = None
     return label, warning
 
