@@ -8,9 +8,16 @@ from typing import Any
 import numpy as np
 from PIL import Image
 import torch
+import torch.nn.functional as F
 
 from facecloak.errors import FaceCloakError
-from facecloak.models import get_embedding_model, get_face_detector
+from facecloak.models import (
+    FACE_DETECTION_CONFIDENCE_THRESHOLD,
+    get_clip_model,
+    get_clip_processor,
+    get_embedding_model,
+    get_face_detector,
+)
 
 DISPLAY_MIN = -1.0
 DISPLAY_MAX = 1.0
@@ -20,6 +27,9 @@ MAX_INPUT_DIMENSION = 1024
 
 # Minimum crop dimension for reliable embedding extraction (Step 32).
 MIN_CROP_DIMENSION = 80
+
+CLIP_MEAN = torch.tensor((0.48145466, 0.4578275, 0.40821073), dtype=torch.float32)
+CLIP_STD = torch.tensor((0.26862954, 0.26130258, 0.27577711), dtype=torch.float32)
 
 
 @dataclass(slots=True)
@@ -37,6 +47,16 @@ class VerificationResult:
     label: str
     pct: float
     warning: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ImageTypeResult:
+    """Image routing decision for dual-backbone processing."""
+
+    image_type: str
+    display_label: str
+    detector_probability: float | None
+    detected_face: DetectedFace | None
 
 
 def ensure_rgb(image: Image.Image) -> Image.Image:
@@ -148,6 +168,57 @@ def detect_primary_face(
     )
 
 
+def detect_image_type(
+    image: Image.Image,
+    detector: Any | None = None,
+    threshold: float = FACE_DETECTION_CONFIDENCE_THRESHOLD,
+) -> ImageTypeResult:
+    """Classify images into face or general scenes (Step 56).
+
+    A face route is selected only when MTCNN finds a face with confidence at
+    or above ``threshold``. Otherwise, the image is handled as a general image
+    and only the CLIP backbone is used.
+    """
+
+    detector = detector or get_face_detector()
+    rgb_image = ensure_rgb(resize_for_detection(image))
+    face_tensor, probability = detector(rgb_image, return_prob=True)
+    prob_float = None if probability is None else float(probability)
+
+    if face_tensor is not None and (prob_float or 0.0) >= threshold:
+        h = face_tensor.shape[-2]
+        w = face_tensor.shape[-1]
+        if h >= MIN_CROP_DIMENSION and w >= MIN_CROP_DIMENSION:
+            detected_face = DetectedFace(
+                tensor=face_tensor.detach().cpu(),
+                image=standardized_tensor_to_pil(face_tensor),
+                probability=prob_float,
+            )
+            return ImageTypeResult(
+                image_type="face",
+                display_label="Image type detected: Face (using FaceNet + CLIP)",
+                detector_probability=prob_float,
+                detected_face=detected_face,
+            )
+
+    return ImageTypeResult(
+        image_type="general",
+        display_label="Image type detected: General Scene (using CLIP)",
+        detector_probability=prob_float,
+        detected_face=None,
+    )
+
+
+def classify_image_type(
+    image: Image.Image,
+    detector: Any | None = None,
+    threshold: float = FACE_DETECTION_CONFIDENCE_THRESHOLD,
+) -> ImageTypeResult:
+    """Alias of :func:`detect_image_type` for readability."""
+
+    return detect_image_type(image=image, detector=detector, threshold=threshold)
+
+
 def extract_embedding_tensor(
     face_tensor: torch.Tensor,
     model: Any | None = None,
@@ -163,6 +234,42 @@ def extract_embedding_numpy(
 ) -> np.ndarray:
     with torch.no_grad():
         embedding = extract_embedding_tensor(face_tensor, model=model)
+    return embedding[0].detach().cpu().numpy().astype(np.float32)
+
+
+def normalize_clip_pixel_values(pixel_values: torch.Tensor) -> torch.Tensor:
+    """Normalize [0, 1] RGB tensors using CLIP channel statistics."""
+
+    mean = CLIP_MEAN.to(device=pixel_values.device, dtype=pixel_values.dtype).view(
+        1, 3, 1, 1
+    )
+    std = CLIP_STD.to(device=pixel_values.device, dtype=pixel_values.dtype).view(
+        1, 3, 1, 1
+    )
+    return (pixel_values - mean) / std
+
+
+def extract_clip_embedding_tensor(
+    image: Image.Image,
+    model: Any | None = None,
+    processor: Any | None = None,
+) -> torch.Tensor:
+    """Extract unit-normalized CLIP image embeddings (Step 54)."""
+
+    model = model or get_clip_model()
+    processor = processor or get_clip_processor()
+    inputs = processor(images=ensure_rgb(image), return_tensors="pt")
+    pixel_values = inputs["pixel_values"].to(_model_device(model))
+    features = model.get_image_features(pixel_values=pixel_values)
+    return F.normalize(features, p=2, dim=1)
+
+
+def extract_clip_embedding_numpy(
+    image: Image.Image,
+    model: Any | None = None,
+    processor: Any | None = None,
+) -> np.ndarray:
+    embedding = extract_clip_embedding_tensor(image, model=model, processor=processor)
     return embedding[0].detach().cpu().numpy().astype(np.float32)
 
 
@@ -199,6 +306,21 @@ def interpret_score(similarity: float) -> tuple[str, str | None]:
         warning = "Try increasing the number of steps or the epsilon value for a stronger cloak."
     else:
         label = "SUCCESS: Identity Cloaked — AI cannot recognize you"
+        warning = None
+    return label, warning
+
+
+def interpret_clip_score(similarity: float) -> tuple[str, str | None]:
+    """Return (label, optional warning) for CLIP similarity scores."""
+
+    if similarity > 0.7:
+        label = "WARNING: Visual Match — retrieval still likely"
+        warning = "Partial cloak only. Try increasing the number of steps or epsilon."
+    elif similarity > 0.3:
+        label = "PARTIAL: Similarity weakened — transfer risk reduced"
+        warning = "Try increasing optimization steps or perturbation strength."
+    else:
+        label = "SUCCESS: Visual Identity Cloaked — semantic match collapsed"
         warning = None
     return label, warning
 

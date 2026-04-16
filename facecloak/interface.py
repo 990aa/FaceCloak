@@ -6,13 +6,21 @@ import tempfile
 
 import gradio as gr
 
-from facecloak.cloaking import CloakHyperparameters, cloak_face_tensor
+from facecloak.cloaking import (
+    CloakHyperparameters,
+    cloak_face_tensor,
+    cloak_general_image,
+)
 from facecloak.environment import render_runtime_markdown
 from facecloak.errors import FaceCloakError
+from facecloak.models import get_clip_model
 from facecloak.pipeline import (
+    classify_image_type,
     cosine_similarity,
     detect_primary_face,
+    extract_clip_embedding_numpy,
     extract_embedding_numpy,
+    interpret_clip_score,
     interpret_score,
     verify_cloak,
 )
