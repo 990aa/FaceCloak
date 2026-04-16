@@ -80,6 +80,8 @@ Run:
 python eval.py --manifest benchmarks/sample_manifest.csv --output-csv benchmark_metrics.csv --output-summary benchmark_summary.md
 ```
 
+Default benchmark settings now prioritize visual imperceptibility (SSIM target compliance) while still measuring transferability. Override with `--epsilon` for stronger attacks when running full datasets.
+
 ### Dataset protocol (50-100 samples)
 
 - Face benchmark: representative LFW pairs.

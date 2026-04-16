@@ -592,16 +592,13 @@ def summarize_metrics(
         [row.surrogate_confidence_drop for row in valid]
     )
     summary["mean_oracle_drop"] = _mean([row.oracle_confidence_drop for row in valid])
+    summary["mean_mrs"] = _mean([row.oracle_confidence for row in valid])
     summary["oracle_transfer_success_rate"] = float(
         np.mean([1.0 if row.oracle_transfer_success else 0.0 for row in valid])
     )
     summary["ssim_pass_rate"] = float(np.mean([1.0 if row.ssim_pass else 0.0 for row in valid]))
 
-    near_duplicate_rows = [
-        row
-        for row in valid
-        if row.modality == "general" and row.pair_type == "near_duplicate"
-    ]
+    near_duplicate_rows = [row for row in valid if row.pair_type == "near_duplicate"]
     if near_duplicate_rows:
         summary["near_duplicate_clean_pass_rate"] = float(
             np.mean([1.0 if row.near_duplicate_clean_pass else 0.0 for row in near_duplicate_rows])
@@ -610,6 +607,9 @@ def summarize_metrics(
         summary["near_duplicate_clean_pass_rate"] = math.nan
 
     general_rows = [row for row in valid if row.modality == "general"]
+    face_rows = [row for row in valid if row.modality == "face"]
+    summary["num_face_rows"] = len(face_rows)
+    summary["num_general_rows"] = len(general_rows)
     summary["general_oracle_clean_mean"] = _mean(
         [row.oracle_clean_confidence for row in general_rows]
     )
@@ -638,6 +638,7 @@ def write_summary_markdown(summary: dict[str, float | int], output_path: Path) -
         f"- Mean SSIM: {_fmt(summary['mean_ssim'])}",
         f"- Mean Surrogate Confidence Drop: {_fmt(summary['mean_surrogate_drop'])}",
         f"- Mean Oracle Confidence Drop: {_fmt(summary['mean_oracle_drop'])}",
+        f"- Mean Residual Similarity (MRS): {_fmt(summary['mean_mrs'])}",
         f"- Oracle Transfer Success Rate: {_fmt(summary['oracle_transfer_success_rate'])}",
         f"- SSIM Pass Rate (>= {summary['ssim_threshold']}): {_fmt(summary['ssim_pass_rate'])}",
         (
@@ -646,7 +647,14 @@ def write_summary_markdown(summary: dict[str, float | int], output_path: Path) -
             f"{_fmt(summary['near_duplicate_clean_pass_rate'])}"
         ),
         f"- General Oracle Clean Similarity Mean: {_fmt(summary['general_oracle_clean_mean'])}",
+        f"- Face Rows: {_fmt(summary['num_face_rows'])}",
+        f"- General Rows: {_fmt(summary['num_general_rows'])}",
     ]
+
+    if int(summary["num_face_rows"]) == 0:
+        lines.append("- Warning: No face rows were present in this run.")
+    if int(summary["num_general_rows"]) == 0:
+        lines.append("- Warning: No general-image rows were present in this run.")
 
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -676,7 +684,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--epsilon",
         type=float,
-        default=0.03,
+        default=0.01,
         help="L-infinity perturbation budget.",
     )
     parser.add_argument(
