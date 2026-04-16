@@ -13,6 +13,8 @@ def test_collect_runtime_report_returns_expected_values() -> None:
     assert report.facenet_pytorch_version == "2.6.0"
     assert report.gradio_version == "6.12.0"
     assert report.huggingface_hub_version == "1.10.2"
+    assert isinstance(report.transformers_version, str)
+    assert len(report.transformers_version) > 0
 
 
 def test_collect_runtime_report_has_no_phase_field() -> None:
@@ -27,6 +29,7 @@ def test_render_runtime_markdown_contains_environment_summary() -> None:
     assert "Runtime Diagnostics" in markdown
     assert "CUDA Available" in markdown
     assert "Torch Cache" in markdown
+    assert "transformers" in markdown
     # Must NOT mention phase numbers
     assert "Phase 2" not in markdown
     assert "Phase 3" not in markdown

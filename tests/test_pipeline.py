@@ -11,9 +11,12 @@ from facecloak.errors import FaceCloakError
 from facecloak.pipeline import (
     MAX_INPUT_DIMENSION,
     amplified_diff_image,
+    classify_image_type,
     cosine_similarity,
     detect_primary_face,
+    extract_clip_embedding_tensor,
     extract_embedding_tensor,
+    interpret_clip_score,
     interpret_score,
     perturbation_preview_image,
     resize_for_detection,
@@ -38,6 +41,15 @@ class MissingFaceDetector:
         return None
 
 
+class LowConfidenceDetector:
+    def __call__(self, _image, return_prob=False):
+        face_tensor = torch.zeros(3, 160, 160)
+        probability = 0.40
+        if return_prob:
+            return face_tensor, probability
+        return face_tensor
+
+
 class DummyEmbeddingModel(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -49,6 +61,23 @@ class DummyEmbeddingModel(torch.nn.Module):
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
         flat = batch.reshape(batch.shape[0], -1)
         return self.projection(flat)
+
+
+class DummyClipProcessor:
+    def __call__(self, images, return_tensors="pt"):
+        assert return_tensors == "pt"
+        return {"pixel_values": torch.ones(1, 3, 224, 224, dtype=torch.float32)}
+
+
+class DummyClipModel(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.device = torch.device("cpu")
+        self.anchor = torch.nn.Parameter(torch.tensor(1.0), requires_grad=False)
+
+    def get_image_features(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        flat = pixel_values.reshape(pixel_values.shape[0], -1)
+        return flat[:, :8]
 
 
 # ── detect_primary_face ─────────────────────────────────────────────────── #
@@ -69,6 +98,24 @@ def test_detect_primary_face_raises_readable_error_when_no_face_found() -> None:
         detect_primary_face(
             Image.new("RGB", (64, 64), "white"), detector=MissingFaceDetector()
         )
+
+
+def test_classify_image_type_routes_face_when_confident() -> None:
+    result = classify_image_type(
+        Image.new("RGB", (64, 64), "white"), detector=DummyDetector()
+    )
+    assert result.image_type == "face"
+    assert result.detected_face is not None
+    assert "FaceNet + CLIP" in result.display_label
+
+
+def test_classify_image_type_routes_general_when_not_confident() -> None:
+    result = classify_image_type(
+        Image.new("RGB", (64, 64), "white"), detector=LowConfidenceDetector()
+    )
+    assert result.image_type == "general"
+    assert result.detected_face is None
+    assert "General Scene" in result.display_label
 
 
 # ── resize_for_detection (Step 34) ──────────────────────────────────────── #
@@ -105,6 +152,17 @@ def test_extract_embedding_tensor_preserves_gradients() -> None:
 
     assert embedding.shape == (1, 4)
     assert face_tensor.grad is not None
+
+
+def test_extract_clip_embedding_tensor_returns_unit_normalized_vector() -> None:
+    embedding = extract_clip_embedding_tensor(
+        Image.new("RGB", (32, 32), "white"),
+        model=DummyClipModel(),
+        processor=DummyClipProcessor(),
+    )
+
+    assert embedding.shape == (1, 8)
+    assert torch.linalg.norm(embedding, dim=1).item() == pytest.approx(1.0, abs=1e-6)
 
 
 # ── cosine_similarity ────────────────────────────────────────────────────── #
@@ -167,6 +225,18 @@ def test_interpret_score_low_similarity_returns_cloaked_label() -> None:
 def test_interpret_score_mid_range_returns_partial_label() -> None:
     label, warning = interpret_score(0.50)
     assert "Partial" in label
+    assert warning is not None
+
+
+def test_interpret_clip_score_returns_success_for_low_similarity() -> None:
+    label, warning = interpret_clip_score(0.1)
+    assert "SUCCESS" in label
+    assert warning is None
+
+
+def test_interpret_clip_score_returns_warning_for_high_similarity() -> None:
+    label, warning = interpret_clip_score(0.9)
+    assert "WARNING" in label
     assert warning is not None
 
 
