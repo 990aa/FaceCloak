@@ -80,8 +80,6 @@ def get_clip_model() -> Any:
     for parameter in model.parameters():
         parameter.requires_grad_(False)
     model.to(torch.device("cpu"))
-    # Expose a simple device attribute for parity with the FaceNet loader.
-    model.device = _clip_model_device(model)
     return model
 
 
