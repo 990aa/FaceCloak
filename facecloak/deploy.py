@@ -65,7 +65,9 @@ def default_space_repo_id(api: HfApi, token: str) -> str:
     whoami = api.whoami(token=token, cache=False)
     username = whoami.get("name")
     if not username:
-        raise FaceCloakError("Could not determine the Hugging Face username from the provided token.")
+        raise FaceCloakError(
+            "Could not determine the Hugging Face username from the provided token."
+        )
     return f"{username}/{PROJECT_SLUG}"
 
 

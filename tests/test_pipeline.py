@@ -10,7 +10,6 @@ import torch
 from facecloak.errors import FaceCloakError
 from facecloak.pipeline import (
     MAX_INPUT_DIMENSION,
-    MIN_CROP_DIMENSION,
     amplified_diff_image,
     cosine_similarity,
     detect_primary_face,
@@ -54,8 +53,11 @@ class DummyEmbeddingModel(torch.nn.Module):
 
 # ── detect_primary_face ─────────────────────────────────────────────────── #
 
+
 def test_detect_primary_face_returns_probability_and_image() -> None:
-    detected = detect_primary_face(Image.new("RGB", (64, 64), "white"), detector=DummyDetector())
+    detected = detect_primary_face(
+        Image.new("RGB", (64, 64), "white"), detector=DummyDetector()
+    )
 
     assert detected.tensor.shape == (3, 160, 160)
     assert detected.probability == pytest.approx(0.97)
@@ -64,10 +66,13 @@ def test_detect_primary_face_returns_probability_and_image() -> None:
 
 def test_detect_primary_face_raises_readable_error_when_no_face_found() -> None:
     with pytest.raises(FaceCloakError, match="No face detected"):
-        detect_primary_face(Image.new("RGB", (64, 64), "white"), detector=MissingFaceDetector())
+        detect_primary_face(
+            Image.new("RGB", (64, 64), "white"), detector=MissingFaceDetector()
+        )
 
 
 # ── resize_for_detection (Step 34) ──────────────────────────────────────── #
+
 
 def test_resize_for_detection_downsizes_large_images() -> None:
     big = Image.new("RGB", (2000, 1500), "white")
@@ -90,6 +95,7 @@ def test_resize_for_detection_preserves_aspect_ratio() -> None:
 
 # ── Embedding extraction ─────────────────────────────────────────────────── #
 
+
 def test_extract_embedding_tensor_preserves_gradients() -> None:
     face_tensor = torch.ones(3, 4, 4, requires_grad=True)
     model = DummyEmbeddingModel()
@@ -103,6 +109,7 @@ def test_extract_embedding_tensor_preserves_gradients() -> None:
 
 # ── cosine_similarity ────────────────────────────────────────────────────── #
 
+
 def test_cosine_similarity_behaves_for_identical_and_opposite_vectors() -> None:
     same = cosine_similarity(np.array([1.0, 2.0]), np.array([1.0, 2.0]))
     opposite = cosine_similarity(np.array([1.0, 0.0]), np.array([-1.0, 0.0]))
@@ -112,6 +119,7 @@ def test_cosine_similarity_behaves_for_identical_and_opposite_vectors() -> None:
 
 
 # ── Visualization helpers ────────────────────────────────────────────────── #
+
 
 def test_tensor_visualization_helpers_return_pil_images() -> None:
     face_tensor = torch.zeros(3, 160, 160)
@@ -143,6 +151,7 @@ def test_amplified_diff_image_amplifies_differences() -> None:
 
 # ── interpret_score (Step 22) ────────────────────────────────────────────── #
 
+
 def test_interpret_score_high_similarity_returns_matched_label() -> None:
     label, warning = interpret_score(0.85)
     assert "Matched" in label
@@ -163,12 +172,14 @@ def test_interpret_score_mid_range_returns_partial_label() -> None:
 
 # ── verify_cloak (Step 21) ───────────────────────────────────────────────── #
 
+
 def test_verify_cloak_uses_fresh_detection_not_original_tensor() -> None:
     """verify_cloak must run MTCNN on the cloaked PIL image, not reuse tensors."""
     import torch.nn.functional as F
 
     class SizeAgnosticModel(torch.nn.Module):
         """Returns L2-normalized mean of flattened tensor, works for any H×W."""
+
         device = torch.device("cpu")
 
         def forward(self, batch: torch.Tensor) -> torch.Tensor:
@@ -179,6 +190,7 @@ def test_verify_cloak_uses_fresh_detection_not_original_tensor() -> None:
 
     class NonZeroDetector:
         """Returns a non-zero face tensor so embedding is always non-zero."""
+
         def __call__(self, _image, return_prob=False):
             face_tensor = torch.ones(3, 160, 160) * 0.3  # ~38/255 grey
             if return_prob:
@@ -202,5 +214,3 @@ def test_verify_cloak_uses_fresh_detection_not_original_tensor() -> None:
     assert hasattr(result, "label")
     assert hasattr(result, "pct")
     assert isinstance(result.label, str) and len(result.label) > 0
-
-

@@ -118,7 +118,9 @@ def amplified_diff_image(
     return Image.fromarray(arr, mode="RGB")
 
 
-def detect_primary_face(image: Image.Image, detector: Any | None = None) -> DetectedFace:
+def detect_primary_face(
+    image: Image.Image, detector: Any | None = None
+) -> DetectedFace:
     """Detect and align the largest face, with input-size guard (Steps 30, 34)."""
     detector = detector or get_face_detector()
     rgb_image = ensure_rgb(resize_for_detection(image))

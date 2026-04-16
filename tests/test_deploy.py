@@ -47,7 +47,9 @@ def _local_temp_dir(name: str) -> Path:
 def test_read_env_file_parses_simple_key_values() -> None:
     temp_dir = _local_temp_dir("env")
     env_path = temp_dir / ".env"
-    env_path.write_text(f"{HF_TOKEN_ENV_VAR}=hf_test_token\nOTHER=value\n", encoding="utf-8")
+    env_path.write_text(
+        f"{HF_TOKEN_ENV_VAR}=hf_test_token\nOTHER=value\n", encoding="utf-8"
+    )
 
     values = read_env_file(env_path)
 

@@ -18,6 +18,7 @@ def test_requirements_file_matches_pinned_runtime_dependencies() -> None:
 def test_phase_label_is_not_a_numbered_phase() -> None:
     """PHASE_LABEL must not contain a phase number reference."""
     import re
-    assert not re.search(r'\bPhase [0-9]\b', PHASE_LABEL), (
+
+    assert not re.search(r"\bPhase [0-9]\b", PHASE_LABEL), (
         f"PHASE_LABEL should not contain a numbered phase: {PHASE_LABEL!r}"
     )

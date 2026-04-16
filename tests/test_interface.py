@@ -48,9 +48,11 @@ def test_interface_has_no_phase_references() -> None:
     # The demo object doesn't expose raw text easily; check the source module
     import inspect
     from facecloak import interface
+
     source = inspect.getsource(interface)
     # Should not contain "Phase 2", "Phase 3" etc. in user-facing strings
     import re
-    matches = re.findall(r'\bPhase [0-9]\b', source)
+
+    matches = re.findall(r"\bPhase [0-9]\b", source)
     # Allow zero matches
     assert len(matches) == 0, f"Found phase number references in interface: {matches}"

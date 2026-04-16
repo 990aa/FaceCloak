@@ -23,7 +23,7 @@ from facecloak.pipeline import (
 @dataclass(frozen=True, slots=True)
 class CloakHyperparameters:
     epsilon: float = 0.03
-    alpha_fraction: float = 0.1   # alpha = alpha_fraction * epsilon
+    alpha_fraction: float = 0.1  # alpha = alpha_fraction * epsilon
     num_steps: int = 100
     l2_lambda: float = 0.01
 
@@ -86,9 +86,7 @@ def cloak_face_tensor(
 
     model = model or get_embedding_model()
     original_batch = (
-        _prepare_face_batch(face_tensor)
-        .to(next(model.parameters()).device)
-        .detach()
+        _prepare_face_batch(face_tensor).to(next(model.parameters()).device).detach()
     )
     original_embedding = model(original_batch).detach()
     delta = torch.zeros_like(original_batch, requires_grad=True)
@@ -104,7 +102,9 @@ def cloak_face_tensor(
 
         cloaked_batch = torch.clamp(original_batch + delta, DISPLAY_MIN, DISPLAY_MAX)
         cloaked_embedding = model(cloaked_batch)
-        cosine = F.cosine_similarity(original_embedding, cloaked_embedding, dim=1).mean()
+        cosine = F.cosine_similarity(
+            original_embedding, cloaked_embedding, dim=1
+        ).mean()
 
         objective = -cosine - parameters.l2_lambda * delta.pow(2).mean()
         objective.backward()
@@ -113,7 +113,8 @@ def cloak_face_tensor(
             delta.add_(alpha * delta.grad.sign())
             delta.clamp_(-parameters.epsilon, parameters.epsilon)
             delta.copy_(
-                torch.clamp(original_batch + delta, DISPLAY_MIN, DISPLAY_MAX) - original_batch
+                torch.clamp(original_batch + delta, DISPLAY_MIN, DISPLAY_MAX)
+                - original_batch
             )
 
         # Optimization (Step 38): `.item()` blocks the execution stream. Only evaluate
@@ -139,7 +140,9 @@ def cloak_face_tensor(
         original_face_image=standardized_tensor_to_pil(original_cpu),
         cloaked_face_image=standardized_tensor_to_pil(final_cpu),
         perturbation_preview=perturbation_preview_image(delta_cpu),
-        amplified_diff=amplified_diff_image(original_cpu[0], final_cpu[0], amplification=75.0),
+        amplified_diff=amplified_diff_image(
+            original_cpu[0], final_cpu[0], amplification=75.0
+        ),
         cloaked_face_tensor=final_cpu[0],
         delta_tensor=delta_cpu[0],
         original_similarity=1.0,

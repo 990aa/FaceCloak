@@ -75,4 +75,3 @@ def test_verify_cloak_uses_fresh_mtcnn_pass_on_real_image() -> None:
     # A strong cloak can push cosine similarity negative (anti-correlated vectors).
     # pct = similarity * 100 and is NOT clamped — that is intentional.
     assert verification.pct == pytest.approx(verification.similarity * 100.0, abs=0.01)
-

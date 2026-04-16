@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import io
 import tempfile
-from pathlib import Path
 
 import gradio as gr
 
@@ -18,7 +16,7 @@ from facecloak.pipeline import (
     interpret_score,
     verify_cloak,
 )
-from facecloak.project import PROJECT_NAME, PROJECT_TAGLINE
+from facecloak.project import PROJECT_NAME
 
 # ---------------------------------------------------------------------------
 # CSS — dark-on-light theme with explicit text colours for HF Spaces compat
@@ -179,6 +177,7 @@ APP_THEME = gr.themes.Base(
 # Score formatting helpers
 # ---------------------------------------------------------------------------
 
+
 def _pct(similarity: float) -> str:
     return f"{max(0.0, min(100.0, similarity * 100.0)):.1f}%"
 
@@ -195,6 +194,7 @@ def _format_detection_probability(probability: float | None) -> str:
 # ---------------------------------------------------------------------------
 # Core processing — generator so Gradio streams progress (Step 28)
 # ---------------------------------------------------------------------------
+
 
 def generate_cloak(image, epsilon, num_steps, alpha_fraction):
     """Generator function that yields intermediate UI state every PGD step.
@@ -293,13 +293,13 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
         chunk = acc.lines[i : i + chunk_size]
         status_so_far += "\n".join(chunk) + "\n"
         yield (
-            None,    # orig_img – not yet
-            None,    # cloaked_img – not yet
-            None,    # diff_img – not yet
+            None,  # orig_img – not yet
+            None,  # cloaked_img – not yet
+            None,  # diff_img – not yet
             orig_score_text,
             "Optimizing…",
             status_so_far,
-            None,    # download path – not yet
+            None,  # download path – not yet
         )
 
     # ── Post-cloak verification (Step 21) ─────────────────────────────── #
@@ -338,7 +338,7 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
 
     # ── Final yield with all outputs filled in ────────────────────────── #
     yield (
-        detected.image,          # original aligned face
+        detected.image,  # original aligned face
         result.cloaked_face_image,
         result.amplified_diff,
         orig_score_text,
@@ -352,10 +352,13 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
 # Compare-faces tab (kept for technical reviewers)
 # ---------------------------------------------------------------------------
 
+
 def compare_faces(image_a, image_b):
     try:
         if image_a is None or image_b is None:
-            raise FaceCloakError("Please provide both images before running a similarity check.")
+            raise FaceCloakError(
+                "Please provide both images before running a similarity check."
+            )
 
         detected_a = detect_primary_face(image_a)
         detected_b = detect_primary_face(image_b)
@@ -381,12 +384,12 @@ def compare_faces(image_a, image_b):
 # Build the Gradio app
 # ---------------------------------------------------------------------------
 
+
 def build_demo() -> gr.Blocks:  # noqa: C901
     with gr.Blocks(title=PROJECT_NAME) as demo:
-
         # ── Hero ─────────────────────────────────────────────────────── #
         gr.Markdown(
-            f"""
+            """
 # 🛡️ FaceCloak
 ## Upload your photo. Watch AI become blind to your face.
 
@@ -397,7 +400,6 @@ This tool uses adversarial mathematics to make microscopic pixel changes that ar
 
         # ── Tabs ─────────────────────────────────────────────────────── #
         with gr.Tab("Generate Cloak"):
-
             # ── Input section ─────────────────────────────────────────── #
             gr.Markdown("### 📸 Step 1 — Upload Your Photo", elem_classes=["panel"])
 
@@ -461,7 +463,7 @@ The defaults work well for most photos. Only adjust if you are experimenting.
 
             # ── Trigger ───────────────────────────────────────────────── #
             cloak_btn = gr.Button(
-                "⚡ Generate Cloak",
+                "Generate Cloak",
                 variant="primary",
                 elem_id="cloak-btn",
             )
@@ -543,10 +545,16 @@ The defaults work well for most photos. Only adjust if you are experimenting.
                 compare_image_a = gr.Image(label="Photo A", type="pil")
                 compare_image_b = gr.Image(label="Photo B", type="pil")
             with gr.Row():
-                aligned_a = gr.Image(label="Detected Face A", type="pil", interactive=False)
-                aligned_b = gr.Image(label="Detected Face B", type="pil", interactive=False)
+                aligned_a = gr.Image(
+                    label="Detected Face A", type="pil", interactive=False
+                )
+                aligned_b = gr.Image(
+                    label="Detected Face B", type="pil", interactive=False
+                )
             compare_button = gr.Button("Compare Faces", variant="primary")
-            pair_similarity = gr.Number(label="Cosine Similarity (1.0 = identical, 0 = unrelated)", precision=4)
+            pair_similarity = gr.Number(
+                label="Cosine Similarity (1.0 = identical, 0 = unrelated)", precision=4
+            )
             pair_summary = gr.Markdown(elem_classes=["panel"])
             compare_button.click(
                 fn=compare_faces,

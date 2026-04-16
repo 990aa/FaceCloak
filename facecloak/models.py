@@ -41,7 +41,7 @@ def get_embedding_model() -> InceptionResnetV1:
         parameter.requires_grad_(False)
     return model
 
+
 # Step 37: Optimize initialization (instantiate at module load time)
 get_face_detector()
 get_embedding_model()
-
