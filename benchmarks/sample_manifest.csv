@@ -1,0 +1,4 @@
+image_id,modality,image_path,reference_path,pair_type
+obama_a_vs_obama_b,face,../tests/fixtures/faces/obama_a.jpg,../tests/fixtures/faces/obama_b.jpg,standard
+obama_b_vs_obama_a,face,../tests/fixtures/faces/obama_b.jpg,../tests/fixtures/faces/obama_a.jpg,standard
+obama_a_self,face,../tests/fixtures/faces/obama_a.jpg,../tests/fixtures/faces/obama_a.jpg,near_duplicate
