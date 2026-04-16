@@ -12,9 +12,8 @@ def test_collect_runtime_report_returns_expected_values() -> None:
     assert report.torch_version.startswith("2.2.2")
     assert report.facenet_pytorch_version == "2.6.0"
     assert report.gradio_version == "6.12.0"
-    assert report.huggingface_hub_version == "1.10.2"
-    assert isinstance(report.transformers_version, str)
-    assert len(report.transformers_version) > 0
+    assert report.huggingface_hub_version == "0.36.2"
+    assert report.transformers_version == "4.41.2"
 
 
 def test_collect_runtime_report_has_no_phase_field() -> None:

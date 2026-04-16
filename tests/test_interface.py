@@ -56,3 +56,13 @@ def test_interface_has_no_phase_references() -> None:
     matches = re.findall(r"\bPhase [0-9]\b", source)
     # Allow zero matches
     assert len(matches) == 0, f"Found phase number references in interface: {matches}"
+
+
+def test_interface_mentions_oracle_validation_copy() -> None:
+    import inspect
+    from facecloak import interface
+
+    source = inspect.getsource(interface)
+    assert "About Our Validation" in source
+    assert "ArcFace" in source
+    assert "CLIP ViT-L/14" in source

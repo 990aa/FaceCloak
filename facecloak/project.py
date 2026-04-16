@@ -11,7 +11,7 @@ PHASE_LABEL = "FaceCloak"
 PHASE_STATUS = "Ready"
 PHASE_SUMMARY = (
     "Face/general routing, dual-backbone similarity (FaceNet + CLIP), "
-    "PGD-based universal cloaking, and post-cloak verification are implemented."
+    "PGD-based universal cloaking, post-cloak verification, and oracle benchmarking are implemented."
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -26,17 +26,19 @@ PINNED_RUNTIME_DEPENDENCIES: tuple[tuple[str, str], ...] = (
     ("numpy", "1.26.4"),
     ("scikit-image", "0.22.0"),
     ("gradio", "6.12.0"),
-    ("huggingface-hub", "1.10.2"),
-    ("transformers", "5.5.4"),
+    ("huggingface-hub", "0.36.2"),
+    ("transformers", "4.41.2"),
 )
 
 SPACE_UPLOAD_ALLOW_PATTERNS: tuple[str, ...] = (
     "app.py",
+    "eval.py",
     "README.md",
     "requirements.txt",
     "pyproject.toml",
     "uv.lock",
     "facecloak/**",
+    "benchmarks/**",
     "scripts/**",
     "tests/**",
 )

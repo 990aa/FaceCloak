@@ -23,7 +23,6 @@ from facecloak.pipeline import (
     cosine_similarity,
     detect_primary_face,
     ensure_rgb,
-    extract_clip_embedding_numpy,
     extract_embedding_numpy,
 )
 
@@ -379,14 +378,6 @@ def _evaluate_general_sample(
         cloak_result.cloaked_image,
         model=oracle_clip.model,
         processor=oracle_clip.processor,
-    )
-
-    # Keep parity with the rest of the codebase by using the shared helper.
-    # This call intentionally uses the surrogate CLIP configuration.
-    _ = extract_clip_embedding_numpy(
-        reference_image,
-        model=surrogate_clip.model,
-        processor=surrogate_clip.processor,
     )
 
     ssim_score = compute_ssim_score(query_image, cloak_result.cloaked_image)
