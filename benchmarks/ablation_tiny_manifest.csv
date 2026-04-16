@@ -1,0 +1,3 @@
+image_id,modality,image_path
+obama_a_face,face,../tests/fixtures/faces/obama_a.jpg
+obama_a_general,general,../tests/fixtures/faces/obama_a.jpg
