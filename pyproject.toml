@@ -7,6 +7,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "facenet-pytorch==2.6.0",
     "gradio==6.12.0",
+    "huggingface-hub==1.10.2",
     "numpy==1.26.4",
     "pillow==10.2.0",
     "torch==2.2.2",
@@ -22,3 +23,6 @@ dev = [
 [tool.pytest.ini_options]
 addopts = "-q -p no:cacheprovider"
 testpaths = ["tests"]
+markers = [
+    "integration: tests that exercise the real facenet-pytorch models and sample portraits",
+]

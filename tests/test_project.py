@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from facecloak.project import requirements_lines
+from facecloak.project import PHASE_LABEL, requirements_lines
 
 
 def test_requirements_file_matches_pinned_runtime_dependencies() -> None:
@@ -11,3 +11,7 @@ def test_requirements_file_matches_pinned_runtime_dependencies() -> None:
     ]
 
     assert requirements == requirements_lines()
+
+
+def test_phase_label_tracks_current_delivery() -> None:
+    assert PHASE_LABEL == "Phases 2-3"

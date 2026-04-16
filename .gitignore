@@ -101,6 +101,9 @@ ipython_config.py
 #uv.lock
 .uv-cache/
 .uv-python/
+.torch-cache/
+.tmp-fixtures/
+pytest-cache-files-*/
 
 # poetry
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.

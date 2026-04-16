@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
 import platform
 
-from facecloak.project import PHASE_LABEL, PHASE_SUMMARY
+from facecloak.project import PHASE_LABEL, PHASE_SUMMARY, TORCH_CACHE_DIR
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,11 +17,13 @@ class RuntimeReport:
     torchvision_version: str
     facenet_pytorch_version: str
     gradio_version: str
+    huggingface_hub_version: str
     numpy_version: str
     pillow_version: str
     cuda_available: bool
     device: str
     tensor_sanity: tuple[int, ...]
+    torch_cache_dir: str
     phase: str
     status: str
     notes: str
@@ -49,14 +51,16 @@ def collect_runtime_report() -> RuntimeReport:
         torchvision_version=_installed_version("torchvision"),
         facenet_pytorch_version=_installed_version("facenet-pytorch"),
         gradio_version=_installed_version("gradio"),
+        huggingface_hub_version=_installed_version("huggingface-hub"),
         numpy_version=_installed_version("numpy"),
         pillow_version=_installed_version("pillow"),
         cuda_available=cuda_available,
         device=device,
         tensor_sanity=tensor_sanity,
+        torch_cache_dir=str(TORCH_CACHE_DIR),
         phase=PHASE_LABEL,
         status=status,
-        notes="CPU execution is the intended deployment target for the Hugging Face Space.",
+        notes="CPU execution remains the intended deployment target for the Hugging Face Space.",
     )
 
 
@@ -77,9 +81,11 @@ def format_runtime_markdown(report: RuntimeReport) -> str:
             f"- NumPy: `{report.numpy_version}`",
             f"- Pillow: `{report.pillow_version}`",
             f"- Gradio: `{report.gradio_version}`",
+            f"- huggingface-hub: `{report.huggingface_hub_version}`",
             f"- CUDA Available: `{cuda_label}`",
             f"- Active Device: `{report.device}`",
             f"- Tensor Sanity: `[{tensor_label}]`",
+            f"- Torch Cache: `{report.torch_cache_dir}`",
             f"- Notes: {report.notes}",
             "",
             PHASE_SUMMARY,

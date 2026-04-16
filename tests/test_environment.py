@@ -12,6 +12,7 @@ def test_collect_runtime_report_returns_expected_values() -> None:
     assert report.torch_version.startswith("2.2.2")
     assert report.facenet_pytorch_version == "2.6.0"
     assert report.gradio_version == "6.12.0"
+    assert report.huggingface_hub_version == "1.10.2"
 
 
 def test_render_runtime_markdown_contains_environment_summary() -> None:
@@ -19,5 +20,5 @@ def test_render_runtime_markdown_contains_environment_summary() -> None:
 
     assert "Runtime Diagnostics" in markdown
     assert "CUDA Available" in markdown
-    assert "Tensor Sanity" in markdown
-    assert "Environment setup, dependency locking" in markdown
+    assert "Torch Cache" in markdown
+    assert "PGD-based face cloaking" in markdown
