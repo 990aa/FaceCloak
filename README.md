@@ -105,6 +105,64 @@ When benchmark outputs meet the above criteria, report the following statement:
 
 > Our attack, generated on lightweight surrogates, successfully transfers to blind ArcFace and CLIP ViT-L/14, demonstrating that the cloaking genuinely defeats commercial-grade recognition systems, while maintaining an SSIM > 0.98.
 
+## Phase 13: Ablation Studies
+
+Ablations are implemented as a reproducible experiment grid in `ablation.py`.
+
+Primary metric:
+
+- MRS (mean residual similarity), defined as mean post-attack oracle similarity.
+- Lower MRS means stronger attack success.
+
+Secondary metric:
+
+- Mean SSIM, with target `SSIM > 0.98`.
+
+### Fixed held-out ablation set
+
+For full research runs, use a fixed manifest with exactly:
+
+- 20 face images
+- 20 general images
+
+This is enforced by default in the ablation runner.
+
+### Implemented ablations
+
+- Ablation 1: Epsilon sweep (`0.01, 0.02, 0.03, 0.05, 0.08, 0.10`)
+- Ablation 2: PGD step sweep (`10, 25, 50, 100, 150, 200`)
+- Ablation 3: Loss variants
+	- CLIP cosine only
+	- CLIP L2 distance only
+	- FaceNet cosine only
+	- Combined CLIP + FaceNet
+- Ablation 4: Norm comparison (`L-infinity` vs `L2`) with equivalent budgets
+- Ablation 5: Surrogate transfer matrix
+	- Surrogates: CLIP ViT-B/32, ResNet-18, ResNet-50
+	- Oracles: CLIP ViT-L/14, optional ConvNeXt-Large
+
+### Outputs
+
+The ablation run writes:
+
+- Structured CSV tables for each ablation
+- PNG plots (tradeoff curves and transfer heatmap)
+- `ablation_report.md` with tables and interpretation text
+
+### Run ablations
+
+Quick smoke test (small sample):
+
+```powershell
+uv run python ablation.py --manifest benchmarks/ablation_sample_manifest.csv --output-dir ablations --allow-small-set --skip-convnext
+```
+
+Full fixed-set run (40-image manifest):
+
+```powershell
+uv run python ablation.py --manifest path/to/ablation_manifest.csv --output-dir ablations
+```
+
 ## Limitations & Ethical Considerations
 
 FaceCloak includes explicit black-box transfer benchmarking against ArcFace and CLIP ViT-L/14, but transferability still depends on data domain, preprocessing differences, and defense pipelines in real systems.
