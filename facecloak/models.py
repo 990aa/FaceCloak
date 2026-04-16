@@ -76,7 +76,7 @@ def get_clip_model() -> Any:
     configure_torch_cache()
     from transformers import CLIPModel
 
-    model = CLIPModel.from_pretrained(CLIP_MODEL_ID).eval()
+    model = CLIPModel.from_pretrained(CLIP_MODEL_ID, use_safetensors=True).eval()
     for parameter in model.parameters():
         parameter.requires_grad_(False)
     model.to(torch.device("cpu"))

@@ -204,7 +204,7 @@ def _load_clip_backbone(model_id: str) -> ClipBackbone:
         ) from exc
 
     processor = CLIPProcessor.from_pretrained(model_id)
-    model = CLIPModel.from_pretrained(model_id).eval()
+    model = CLIPModel.from_pretrained(model_id, use_safetensors=True).eval()
     for parameter in model.parameters():
         parameter.requires_grad_(False)
     model.to(torch.device("cpu"))
