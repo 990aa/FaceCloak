@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import tempfile
+from typing import Any
 
 import gradio as gr
+import numpy as np
+from PIL import Image
 
 from uacloak.cloaking import (
     CloakHyperparameters,
@@ -210,6 +214,59 @@ def _format_detection_probability(probability: float | None) -> str:
     return "unknown" if probability is None else f"{probability:.4f}"
 
 
+def _load_image_from_path(path: str, field_name: str) -> Image.Image:
+    image_path = Path(path)
+    if not image_path.exists():
+        raise UACloakError(
+            f"{field_name} could not be loaded because the file does not exist."
+        )
+    with Image.open(image_path) as pil_image:
+        return pil_image.convert("RGB")
+
+
+def _coerce_image_input(image: Any, field_name: str) -> Image.Image:
+    """Normalize Gradio/UI/API image payloads into PIL RGB images."""
+
+    if image is None:
+        raise UACloakError(f"{field_name} is missing.")
+
+    if isinstance(image, Image.Image):
+        return image.convert("RGB")
+
+    if isinstance(image, str):
+        return _load_image_from_path(image, field_name)
+
+    if isinstance(image, dict):
+        for key in ("path", "name"):
+            candidate = image.get(key)
+            if isinstance(candidate, str) and candidate:
+                return _load_image_from_path(candidate, field_name)
+        raise UACloakError(
+            f"{field_name} payload is missing a usable file path."
+        )
+
+    if isinstance(image, np.ndarray):
+        array = np.asarray(image)
+        if array.ndim == 2:
+            if array.dtype != np.uint8:
+                array = np.clip(array, 0, 255).astype(np.uint8)
+            return Image.fromarray(array, mode="L").convert("RGB")
+
+        if array.ndim == 3 and array.shape[2] in (3, 4):
+            if array.dtype != np.uint8:
+                array = np.clip(array, 0, 255).astype(np.uint8)
+            mode = "RGB" if array.shape[2] == 3 else "RGBA"
+            return Image.fromarray(array, mode=mode).convert("RGB")
+
+        raise UACloakError(
+            f"{field_name} has unsupported array shape: {array.shape}."
+        )
+
+    raise UACloakError(
+        f"{field_name} has unsupported type: {type(image).__name__}."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Core processing — generator so Gradio streams progress (Step 28)
 # ---------------------------------------------------------------------------
@@ -226,10 +283,12 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
     the image outputs as None so only the status textbox updates.
     """
     # ── Input validation ────────────────────────────────────────────────── #
-    if image is None:
+    try:
+        image = _coerce_image_input(image, "Input image")
+    except UACloakError as exc:
         raise gr.Error(
             "No image provided. Please upload a photo before clicking Generate Cloak."
-        )
+        ) from exc
 
     # Keep processing bounded for large uploads on CPU Spaces.
     image = resize_for_detection(ensure_rgb(image))
@@ -440,8 +499,12 @@ def compare_faces(image_a, image_b):
                 "Please provide both images before running a similarity check."
             )
 
-        image_a = resize_for_detection(ensure_rgb(image_a))
-        image_b = resize_for_detection(ensure_rgb(image_b))
+        image_a = resize_for_detection(
+            ensure_rgb(_coerce_image_input(image_a, "Image A"))
+        )
+        image_b = resize_for_detection(
+            ensure_rgb(_coerce_image_input(image_b, "Image B"))
+        )
 
         route_a = classify_image_type(image_a)
         route_b = classify_image_type(image_b)
@@ -486,6 +549,8 @@ def compare_faces(image_a, image_b):
         return ensure_rgb(image_a), ensure_rgb(image_b), clip_similarity, summary
     except UACloakError as exc:
         raise gr.Error(str(exc)) from exc
+    except Exception as exc:
+        raise gr.Error(f"Unexpected comparison error: {exc}") from exc
 
 
 # ---------------------------------------------------------------------------

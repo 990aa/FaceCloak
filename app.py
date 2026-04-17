@@ -13,6 +13,7 @@ if __name__ == "__main__":
         "css": APP_CSS,
         # SSR can be brittle behind some hosted reverse proxies.
         "ssr_mode": False,
+        "show_error": True,
     }
 
     if is_space:
