@@ -1,0 +1,3 @@
+image_id,modality,category,oracle_clean_similarity,oracle_similarity_pgd,oracle_similarity_fgsm,oracle_similarity_pgd_jpeg90,oracle_similarity_pgd_resize50,oracle_similarity_pgd_gaussian05,ssim_score,psnr_db,success_pgd_03,success_fgsm_03,stage_preprocess_s,stage_detection_s,stage_initial_embedding_s,stage_attack_pgd_s,stage_verify_s,stage_output_s,total_pipeline_s,error
+obama,face,face,0.903861,0.886366,0.876256,0.877744,0.856607,0.887590,0.950185,37.829869,false,false,0.232946,1.609397,5.032634,140.873864,29.086410,0.027527,176.862778,
+dog,general,scene,0.958734,0.874965,0.847428,0.872239,0.900642,0.874873,0.917522,34.736770,false,false,0.046966,0.000000,0.331496,68.617359,15.949985,0.187979,85.133785,
