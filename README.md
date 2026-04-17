@@ -14,7 +14,7 @@ pinned: false
 
 Universal adversarial pixel cloaking against modern visual recognition systems with explicit imperceptibility controls and oracle validation.
 
-[Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/a-01a/universal-adversarial-cloak)
+[Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/a-01a/facecloak)
 
 ## What This Project Does
 
@@ -73,12 +73,20 @@ uv run python scripts/generate_report.py \
 	--output-dir results
 ```
 
-The Benchmark Results tab in the app reads these generated files:
+These generated files are for repository documentation and offline analysis (they are intentionally not rendered inside the Space UI):
 
 - `results/pca.png`
 - `results/scatter.png`
 - `results/grid.png`
 - `results/benchmark_report.md`
+
+## Limitations
+
+- High-contrast scenes, extreme lighting, or very low-resolution inputs can reduce cloak effectiveness.
+- Face detection confidence drops for strong profile angles, heavy occlusion, or tiny face crops.
+- Face images use FaceNet + CLIP optimization; non-face images use CLIP-only optimization.
+- Transfer to unseen production systems is expected but cannot be guaranteed for every model family.
+- Large images may be resized for stable CPU runtime behavior in Hugging Face Spaces.
 
 ## Notebook Generation
 
@@ -98,7 +106,7 @@ This writes `universal_cloaking_demo.ipynb` and includes all images from:
 Set a Hugging Face token in environment variable `UACLOAK_HF_TOKEN` (or `.env`) and run:
 
 ```bash
-uv run python scripts/create_or_update_space.py a-01a/universal-adversarial-cloak
+uv run python scripts/create_or_update_space.py a-01a/facecloak
 ```
 
 ## Privacy

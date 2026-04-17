@@ -10,8 +10,8 @@ from huggingface_hub import HfApi, SpaceHardware
 
 from uacloak.errors import UACloakError
 from uacloak.project import (
+    DEFAULT_SPACE_SLUG,
     PROJECT_ROOT,
-    PROJECT_SLUG,
     SPACE_UPLOAD_ALLOW_PATTERNS,
     SPACE_URL_TEMPLATE,
 )
@@ -74,7 +74,7 @@ def default_space_repo_id(api: HfApi, token: str) -> str:
         raise UACloakError(
             "Could not determine the Hugging Face username from the provided token."
         )
-    return f"a-01a/{PROJECT_SLUG}"
+    return f"{username}/{DEFAULT_SPACE_SLUG}"
 
 
 def create_or_update_space(

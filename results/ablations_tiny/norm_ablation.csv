@@ -1,3 +1,0 @@
-norm_type,epsilon,l2_radius,mrs_face,mrs_general,mean_ssim,runtime_seconds
-linf,0.010000,3.879794,0.983759,0.995282,0.995869,27.143469
-l2,0.010000,3.879794,0.981523,0.998896,0.998455,26.738592

@@ -17,6 +17,7 @@ PHASE_SUMMARY = (
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TORCH_CACHE_DIR = PROJECT_ROOT / ".torch-cache"
 SPACE_URL_TEMPLATE = "https://huggingface.co/spaces/{repo_id}"
+DEFAULT_SPACE_SLUG = "facecloak"
 
 PINNED_RUNTIME_DEPENDENCIES: tuple[tuple[str, str], ...] = (
     ("torch", "2.2.2"),
@@ -37,9 +38,6 @@ SPACE_UPLOAD_ALLOW_PATTERNS: tuple[str, ...] = (
     "README.md",
     "requirements.txt",
     "uacloak/**",
-    "benchmarks/**",
-    "tests/fixtures/**",
-    "results/**",
 )
 
 

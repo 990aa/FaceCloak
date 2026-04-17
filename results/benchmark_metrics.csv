@@ -1,4 +1,0 @@
-image_id,modality,pair_type,ssim_score,surrogate_confidence,oracle_confidence,surrogate_clean_confidence,oracle_clean_confidence,surrogate_confidence_drop,oracle_confidence_drop,ssim_pass,oracle_transfer_success,near_duplicate_clean_pass,error
-obama_a_vs_obama_b,face,standard,0.988663,0.820500,0.900175,0.985664,0.903861,0.165164,0.003686,true,true,false,
-obama_b_vs_obama_a,face,standard,0.988871,0.779515,0.880197,0.985664,0.903861,0.206149,0.023664,true,true,false,
-obama_a_self,face,near_duplicate,0.988663,0.819135,0.966012,1.000000,1.000000,0.180865,0.033988,true,true,true,
