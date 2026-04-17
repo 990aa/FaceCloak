@@ -1,0 +1,2 @@
+variable,value,mrs_face,mrs_general,mean_ssim,runtime_seconds
+num_steps,25,0.954361,0.913164,0.953077,213.334276
