@@ -1,5 +1,5 @@
 [project]
-name = "facecloak"
+name = "Universal Adversarial Cloak"
 version = "0.1.0"
 description = "Local adversarial pixel poisoning toolkit for biometric privacy preservation."
 readme = "README.md"

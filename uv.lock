@@ -422,7 +422,7 @@ wheels = [
 ]
 
 [[package]]
-name = "facecloak"
+name = "Universal Adversarial Cloak"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

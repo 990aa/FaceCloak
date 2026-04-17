@@ -1,5 +1,7 @@
-from facecloak.interface import APP_CSS, APP_THEME, demo
+"""HuggingFace Spaces entrypoint."""
+
+from facecloak.interface import demo  # noqa: F401 — Gradio auto-discovers `demo`
 
 
 if __name__ == "__main__":
-    demo.launch(theme=APP_THEME, css=APP_CSS)
+    demo.launch()
