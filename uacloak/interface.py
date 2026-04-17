@@ -371,7 +371,12 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
             ]
         )
 
-        acc = _ProgressAccumulator("FaceNet")
+        progress_lines.append(
+            "  Note: live FaceNet progress uses an optimization proxy; final result also reports a re-detected verification score."
+        )
+        progress_lines.append("")
+
+        acc = _ProgressAccumulator("FaceNet proxy")
         try:
             result = cloak_face_tensor(
                 detected.tensor,
@@ -402,12 +407,17 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
                 result.cloaked_face_image,
                 original_facenet_embedding,
             )
-            final_face_similarity = verification.similarity
-            face_label = verification.label
-            face_warning = verification.warning
+            verified_face_similarity = verification.similarity
+            verified_face_label = verification.label
+            verified_face_warning = verification.warning
         except UACloakError:
-            final_face_similarity = result.final_similarity
-            face_label, face_warning = interpret_score(final_face_similarity)
+            verified_face_similarity = result.final_similarity
+            verified_face_label, verified_face_warning = interpret_score(
+                verified_face_similarity
+            )
+
+        proxy_face_similarity = result.final_similarity
+        proxy_face_label, proxy_face_warning = interpret_score(proxy_face_similarity)
 
         cloaked_clip_embedding = extract_clip_embedding_numpy(result.cloaked_face_image)
         final_clip_similarity = cosine_similarity(
@@ -418,13 +428,22 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
 
         cloak_score_text = "\n".join(
             [
-                _score_line(f"FaceNet — {face_label}", final_face_similarity),
+                _score_line(
+                    f"FaceNet (re-detected) — {verified_face_label}",
+                    verified_face_similarity,
+                ),
+                _score_line(
+                    f"FaceNet (optimization proxy) — {proxy_face_label}",
+                    proxy_face_similarity,
+                ),
                 _score_line(f"CLIP — {clip_label}", final_clip_similarity),
             ]
         )
 
         warning_lines = [
-            warning for warning in (face_warning, clip_warning) if warning is not None
+            warning
+            for warning in (verified_face_warning, proxy_face_warning, clip_warning)
+            if warning is not None
         ]
         warning_msg = ""
         if warning_lines:
@@ -436,7 +455,8 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
 
         status_final = (
             status_so_far
-            + f"\nDone. Best FaceNet cosine similarity: {final_face_similarity:.4f} ({_pct(final_face_similarity)})"
+            + f"\nDone. Best FaceNet proxy cosine similarity: {proxy_face_similarity:.4f} ({_pct(proxy_face_similarity)})"
+            + f"\nRe-detected FaceNet cosine similarity: {verified_face_similarity:.4f} ({_pct(verified_face_similarity)})"
             + f"\nBest CLIP cosine similarity: {final_clip_similarity:.4f} ({_pct(final_clip_similarity)})"
             + warning_msg
         )
