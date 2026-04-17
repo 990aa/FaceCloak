@@ -1,4 +1,4 @@
-"""Phase 14 benchmarking runner for absolute attack performance measurement."""
+"""benchmarking runner for absolute attack performance measurement."""
 
 from __future__ import annotations
 
@@ -64,7 +64,7 @@ class BenchmarkSample:
 
 @dataclass(frozen=True, slots=True)
 class BenchmarkRow:
-    """Per-sample benchmark outputs for Phase 14."""
+    """Per-sample benchmark outputs for Academic."""
 
     image_id: str
     modality: str
@@ -172,7 +172,7 @@ def _resolve_manifest_path(manifest_path: Path, raw_path: str) -> Path:
 
 
 def load_benchmark_manifest(manifest_path: Path) -> list[BenchmarkSample]:
-    """Load Phase 14 benchmark manifest.
+    """Load benchmark manifest.
 
     Required columns:
     - image_id
@@ -606,7 +606,7 @@ def run_phase14_benchmark(
     *,
     success_threshold: float = BENCHMARK_SUCCESS_THRESHOLD,
 ) -> list[BenchmarkRow]:
-    """Run Phase 14 benchmark suite with fixed default attack settings."""
+    """Run benchmark suite with fixed default attack settings."""
 
     if not samples:
         raise UACloakError("No benchmark samples were provided.")
@@ -896,9 +896,9 @@ def write_phase14_summary_markdown(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     lines: list[str] = []
-    lines.append("## Phase 14 Benchmark Summary")
+    lines.append("## Benchmark Summary")
     lines.append("")
-    lines.append("### Step 76: Fixed Benchmark Conditions")
+    lines.append("### Fixed Benchmark Conditions")
     lines.append("")
     lines.append(
         _markdown_table(
@@ -922,7 +922,7 @@ def write_phase14_summary_markdown(
     )
     lines.append("")
 
-    lines.append("### Step 77: Face Attack Success")
+    lines.append("### Face Benchmark: Attack Success Rate")
     lines.append("")
     if summary.face is None:
         lines.append("No face rows were present in this run.")
@@ -945,7 +945,7 @@ def write_phase14_summary_markdown(
         )
     lines.append("")
 
-    lines.append("### Step 78: General Attack Success by Category")
+    lines.append("### General Benchmark: Attack Success by Category")
     lines.append("")
     if not summary.general_by_category:
         lines.append("No general rows were present in this run.")
@@ -975,7 +975,7 @@ def write_phase14_summary_markdown(
         )
     lines.append("")
 
-    lines.append("### Step 79: Perceptual Quality")
+    lines.append("### Perceptual Quality")
     lines.append("")
     if summary.perceptual is not None:
         lines.append(
@@ -999,7 +999,7 @@ def write_phase14_summary_markdown(
         )
     lines.append("")
 
-    lines.append("### Step 80: Robustness to Post-Processing")
+    lines.append("### Robustness to Post-processing")
     lines.append("")
     if summary.robustness is not None:
         lines.append(
@@ -1027,7 +1027,7 @@ def write_phase14_summary_markdown(
         )
     lines.append("")
 
-    lines.append("### Step 81: Runtime Performance")
+    lines.append("### Runtime Performance")
     lines.append("")
     if summary.runtime is not None:
         lines.append(
@@ -1052,7 +1052,7 @@ def write_phase14_summary_markdown(
         )
     lines.append("")
 
-    lines.append("### Step 82: FGSM Baseline Comparison")
+    lines.append("### Baseline Comparison: FGSM vs PGD")
     lines.append("")
     if summary.fgsm is not None:
         lines.append(
@@ -1088,26 +1088,26 @@ def write_phase14_summary_json(summary: BenchmarkSummary, output_path: Path) -> 
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run Phase 14 benchmark suite at fixed default settings."
+        description="Run benchmark suite at fixed default settings."
     )
     parser.add_argument(
         "--manifest",
-        default="benchmarks/phase14_sample_manifest.csv",
+        default="benchmarks/benchmarking_manifest.csv",
         help="Path to benchmark manifest CSV.",
     )
     parser.add_argument(
         "--output-csv",
-        default="benchmark_phase14_metrics.csv",
+        default="results/benchmark_phase14_metrics.csv",
         help="Path to write per-sample benchmark metrics CSV.",
     )
     parser.add_argument(
         "--output-summary",
-        default="benchmark_phase14_summary.md",
+        default="results/benchmark_phase14_summary.md",
         help="Path to write benchmark summary markdown.",
     )
     parser.add_argument(
         "--output-json",
-        default="benchmark_phase14_summary.json",
+        default="results/benchmark_phase14_summary.json",
         help="Path to write benchmark summary JSON.",
     )
     parser.add_argument(
@@ -1146,7 +1146,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     write_phase14_summary_markdown(summary, output_summary)
     write_phase14_summary_json(summary, output_json)
 
-    print("Phase 14 benchmark complete.")
+    print("benchmark complete.")
     print(f"- Metrics CSV: {output_csv}")
     print(f"- Summary Markdown: {output_summary}")
     print(f"- Summary JSON: {output_json}")

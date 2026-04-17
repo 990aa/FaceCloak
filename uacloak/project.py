@@ -42,6 +42,10 @@ SPACE_UPLOAD_ALLOW_PATTERNS: tuple[str, ...] = (
     "benchmarks/**",
     "scripts/**",
     "tests/**",
+    "results/**",
+    "*.png",
+    "*.json",
+    "*.md",
 )
 
 

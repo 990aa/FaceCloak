@@ -1,109 +1,138 @@
-"""Academic visualization toolkit for Universal Adversarial Cloak metrics."""
+"""Visualization toolkit for benchmark and ablation reporting."""
 
 from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 import torch
 
-from uacloak.benchmarking import BenchmarkRow
+PLOT_STYLE = "seaborn-v0_8-whitegrid"
+PLOT_COLORS = {
+    "primary": "#1f4e79",
+    "secondary": "#d95f0e",
+    "accent": "#2a9d8f",
+    "muted": "#7a7a7a",
+    "grid": "#d5d5d5",
+}
 
-matplotlib.use("Agg")  # Non-interactive backend
+
+def _configure_style() -> None:
+    plt.style.use(PLOT_STYLE)
+    plt.rcParams.update(
+        {
+            "axes.titlesize": 12,
+            "axes.labelsize": 10,
+            "axes.edgecolor": "#444444",
+            "axes.linewidth": 0.9,
+            "grid.color": PLOT_COLORS["grid"],
+            "grid.alpha": 0.25,
+            "legend.frameon": True,
+            "legend.framealpha": 0.9,
+        }
+    )
+
+
+def _row_value(row: Any, field: str, default: Any = None) -> Any:
+    if isinstance(row, dict):
+        return row.get(field, default)
+    return getattr(row, field, default)
+
+
+def _to_image(value: Any) -> Image.Image:
+    if isinstance(value, Image.Image):
+        return value.convert("RGB")
+
+    path = Path(str(value))
+    if not path.exists():
+        raise FileNotFoundError(f"Image path does not exist: {path}")
+    return Image.open(path).convert("RGB")
+
+
+def _fmt_metric(value: float | int | str | None, digits: int = 3) -> str:
+    if value is None:
+        return "n/a"
+    if isinstance(value, str):
+        return value
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float) and math.isnan(value):
+        return "n/a"
+    if isinstance(value, float):
+        return f"{value:.{digits}f}"
+    return str(value)
 
 
 def plot_result_grid(
-    face_rows: Sequence[BenchmarkRow],
-    general_rows: Sequence[BenchmarkRow],
+    face_rows: Sequence[Any],
+    general_rows: Sequence[Any],
     output_path: Path,
 ) -> None:
-    """Create a 2x3 grid of original vs cloaked images with similarity annotations."""
-    
-    # Select up to 3 faces and 3 general images
-    faces = face_rows[:3]
-    generals = general_rows[:3]
-    
-    if not faces and not generals:
+    """Render a side-by-side original/cloaked comparison grid."""
+
+    _configure_style()
+
+    faces = list(face_rows[:3])
+    generals = list(general_rows[:3])
+    entries: list[tuple[str, Any]] = [("Face", row) for row in faces] + [
+        ("General", row) for row in generals
+    ]
+
+    if not entries:
         return
-        
-    num_cols = 3
-    num_rows = 2
-    
-    fig, axes = plt.subplots(
-        2 * num_rows, num_cols, figsize=(15, 10),
-        gridspec_kw={"height_ratios": [3, 0.5, 3, 0.5]}
-    )
-    plt.subplots_adjust(wspace=0.1, hspace=0.3)
-    
-    def _plot_pair(row: BenchmarkRow, grid_col: int, is_face: bool):
-        row_idx = 0 if is_face else 2
-        
-        orig_img = Image.open(row.image_path).convert("RGB")
+
+    fig, axes = plt.subplots(len(entries), 2, figsize=(11.5, 3.8 * len(entries)))
+    if len(entries) == 1:
+        axes = np.array([axes])
+
+    for index, (domain, row) in enumerate(entries):
+        original_raw = _row_value(row, "original_image", _row_value(row, "image_path"))
+        cloaked_raw = _row_value(row, "cloaked_image", original_raw)
+
         try:
-            cloaked_img_name = Path(row.image_path).stem + "_cloaked" + Path(row.image_path).suffix
-            cloaked_path = Path("ablations") / cloaked_img_name
-            if not cloaked_path.exists():
-                 # fallback if not using ablation output directory
-                 cloaked_path = Path("benchmarks") / cloaked_img_name
-            
-            # If the user provides actual images in the struct, we don't have them here.
-            # We will visualize them dynamically if we pass image tensors or use the raw file path.
-            # Since BenchmarkRow doesn't store the cloaked *image array*, this script expects them.
-            if cloaked_path.exists():
-                cloak_img = Image.open(cloaked_path).convert("RGB")
-            else:
-                cloak_img = orig_img # fallback if cloaked img isn't saved to disk
+            original = _to_image(original_raw)
         except Exception:
-            cloak_img = orig_img
+            continue
 
-        ax_img = axes[row_idx, grid_col]
-        
-        # Combine images side-by-side
-        combined = Image.new("RGB", (orig_img.width + cloak_img.width + 10, max(orig_img.height, cloak_img.height)), "white")
-        combined.paste(orig_img, (0, 0))
-        combined.paste(cloak_img, (orig_img.width + 10, 0))
-        
-        ax_img.imshow(combined)
-        ax_img.axis("off")
-        ax_img.set_title("Original     vs     Cloaked", fontsize=10)
+        try:
+            cloaked = _to_image(cloaked_raw)
+        except Exception:
+            cloaked = original
 
-        # Plot text securely
-        ax_text = axes[row_idx + 1, grid_col]
-        ax_text.axis("off")
-        
-        ssim_val = row.ssim_score if not math.isnan(row.ssim_score) else 1.0
-        oracle_drop = row.oracle_clean_similarity - row.oracle_similarity_pgd
-        
-        text = (
-            f"SSIM: {ssim_val:.3f}\n"
-            f"Oracle Clean: {row.oracle_clean_similarity:.2f}\n"
-            f"Oracle Cloaked: {row.oracle_similarity_pgd:.2f}\n"
-            f"(Drop: {oracle_drop:.2f})"
+        image_id = _row_value(row, "image_id", f"sample_{index + 1}")
+        oracle_clean = float(_row_value(row, "oracle_clean_similarity", math.nan))
+        oracle_pgd = float(_row_value(row, "oracle_similarity_pgd", math.nan))
+        ssim_score = float(_row_value(row, "ssim_score", math.nan))
+        drop = oracle_clean - oracle_pgd if not (math.isnan(oracle_clean) or math.isnan(oracle_pgd)) else math.nan
+
+        left_ax = axes[index, 0]
+        right_ax = axes[index, 1]
+
+        left_ax.imshow(original)
+        left_ax.axis("off")
+        left_ax.set_title(f"{domain} | {image_id} | Original")
+
+        right_ax.imshow(cloaked)
+        right_ax.axis("off")
+        right_ax.set_title(
+            "Cloaked"
+            f" | clean {_fmt_metric(oracle_clean)}"
+            f" | pgd {_fmt_metric(oracle_pgd)}"
+            f" | drop {_fmt_metric(drop)}"
+            f" | ssim {_fmt_metric(ssim_score)}"
         )
-        ax_text.text(0.5, 0.5, text, ha="center", va="center", fontsize=9, 
-                     bbox=dict(facecolor="white", alpha=0.8, edgecolor="lightgray", boxstyle="round,pad=0.5"))
 
-    for i, face_row in enumerate(faces):
-        _plot_pair(face_row, i, is_face=True)
-        
-    for j, gen_row in enumerate(generals):
-        _plot_pair(gen_row, j, is_face=False)
-
-    # Hide unused axes
-    for r in range(2 * num_rows):
-        for c in range(num_cols):
-            if r in [0, 1] and c >= len(faces):
-                axes[r, c].axis("off")
-            if r in [2, 3] and c >= len(generals):
-                axes[r, c].axis("off")
-                
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path, bbox_inches="tight", dpi=150)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150)
     plt.close(fig)
 
 
@@ -112,46 +141,75 @@ def plot_embedding_pca(
     cloaked_embeddings: list[torch.Tensor],
     output_path: Path,
 ) -> None:
-    """Project high-dim embeddings to 2D via PCA and plot displacement."""
-    
+    """Project embeddings to 2D PCA and visualize displacement vectors."""
+
+    _configure_style()
+
     if not original_embeddings or not cloaked_embeddings:
         return
-        
-    num_samples = len(original_embeddings)
-    X_orig = torch.stack([e.view(-1) for e in original_embeddings])
-    X_cloak = torch.stack([e.view(-1) for e in cloaked_embeddings])
-    
-    X_all = torch.cat([X_orig, X_cloak], dim=0)
-    X_all_centered = X_all - X_all.mean(dim=0, keepdim=True)
-    
-    U, S, V = torch.pca_lowrank(X_all_centered, q=2)
-    
-    points = torch.matmul(X_all_centered, V)
+
+    num_samples = min(len(original_embeddings), len(cloaked_embeddings))
+    if num_samples == 0:
+        return
+
+    x_orig = torch.stack([embed.view(-1).float() for embed in original_embeddings[:num_samples]])
+    x_cloak = torch.stack([embed.view(-1).float() for embed in cloaked_embeddings[:num_samples]])
+
+    x_all = torch.cat([x_orig, x_cloak], dim=0)
+    x_all_centered = x_all - x_all.mean(dim=0, keepdim=True)
+
+    q = 2 if min(x_all_centered.shape[0], x_all_centered.shape[1]) >= 2 else 1
+    _, _, components = torch.pca_lowrank(x_all_centered, q=q)
+    points = torch.matmul(x_all_centered, components[:, :q])
+    if q == 1:
+        points = torch.cat([points, torch.zeros_like(points)], dim=1)
+
     orig_2d = points[:num_samples].cpu().numpy()
     cloak_2d = points[num_samples:].cpu().numpy()
-    
-    plt.figure(figsize=(10, 8))
-    
-    # Connect pairs
-    for i in range(num_samples):
-        plt.plot(
-            [orig_2d[i, 0], cloak_2d[i, 0]], 
-            [orig_2d[i, 1], cloak_2d[i, 1]], 
-            'gray', alpha=0.3, linestyle='--'
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    for idx in range(num_samples):
+        ax.plot(
+            [orig_2d[idx, 0], cloak_2d[idx, 0]],
+            [orig_2d[idx, 1], cloak_2d[idx, 1]],
+            color=PLOT_COLORS["muted"],
+            alpha=0.35,
+            linestyle="--",
+            linewidth=1.0,
         )
-        
-    plt.scatter(orig_2d[:, 0], orig_2d[:, 1], c='blue', label='Original Embeddings', alpha=0.7, edgecolors='k')
-    plt.scatter(cloak_2d[:, 0], cloak_2d[:, 1], c='red', label='Cloaked Embeddings', alpha=0.7, marker='X', edgecolors='k')
-    
-    plt.title("PCA Projection of Semantic Cloaking Displacement")
-    plt.xlabel("Principal Component 1")
-    plt.ylabel("Principal Component 2")
-    plt.legend()
-    plt.grid(True, alpha=0.2)
-    
+
+    ax.scatter(
+        orig_2d[:, 0],
+        orig_2d[:, 1],
+        s=52,
+        c=PLOT_COLORS["primary"],
+        label="Original embeddings",
+        edgecolors="#111111",
+        linewidths=0.4,
+        alpha=0.85,
+    )
+    ax.scatter(
+        cloak_2d[:, 0],
+        cloak_2d[:, 1],
+        s=62,
+        c=PLOT_COLORS["secondary"],
+        marker="X",
+        label="Cloaked embeddings",
+        edgecolors="#111111",
+        linewidths=0.4,
+        alpha=0.9,
+    )
+
+    ax.set_title("Embedding-space displacement after cloaking")
+    ax.set_xlabel("Principal Component 1")
+    ax.set_ylabel("Principal Component 2")
+    ax.legend(loc="best")
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path, bbox_inches="tight", dpi=150)
-    plt.close()
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
 
 
 def plot_transferability_scatter(
@@ -159,52 +217,65 @@ def plot_transferability_scatter(
     oracle_drops: list[float],
     output_path: Path,
 ) -> None:
-    """Plot surrogate vs oracle performance with regression."""
-    
+    """Plot surrogate-vs-oracle confidence drop with trend and identity lines."""
+
+    _configure_style()
+
     if not surrogate_drops or not oracle_drops:
         return
-        
-    x = np.array(surrogate_drops)
-    y = np.array(oracle_drops)
-    
-    # Filter nans
-    mask = ~np.isnan(x) & ~np.isnan(y)
+
+    count = min(len(surrogate_drops), len(oracle_drops))
+    x = np.asarray(surrogate_drops[:count], dtype=np.float32)
+    y = np.asarray(oracle_drops[:count], dtype=np.float32)
+
+    mask = np.isfinite(x) & np.isfinite(y)
     x = x[mask]
     y = y[mask]
-    
-    if len(x) < 2:
-        return
-        
-    # Fit line
-    m, b = np.polyfit(x, y, 1)
-    
-    # Correlation (R^2)
-    correlation_matrix = np.corrcoef(x, y)
-    correlation_xy = correlation_matrix[0, 1]
-    r_squared = correlation_xy ** 2
 
-    plt.figure(figsize=(8, 8))
-    plt.scatter(x, y, color='purple', alpha=0.6, edgecolors='k')
-    
-    # Plot regression line
-    line_x = np.linspace(min(x), max(x), 100)
-    plt.plot(line_x, m * line_x + b, color='orange', linestyle='--', linewidth=2, 
-             label=f'Best Fit ($R^2 = {r_squared:.2f}$)')
-             
-    # Plot ideal line x=y
-    max_val = max(max(x), max(y))
-    plt.plot([0, max_val], [0, max_val], color='gray', linestyle=':', label='Ideal 1:1 Transfer')
-    
-    plt.title("Surrogate vs. Oracle Transferability")
-    plt.xlabel("Surrogate Absolute Similarity Drop")
-    plt.ylabel("Oracle Absolute Similarity Drop")
-    plt.legend()
-    plt.grid(True, alpha=0.2)
-    
-    # Add quadrants text
-    plt.text(max(x)*0.05, max(y)*0.95, "Strong Transferability", fontsize=10, 
-             bbox=dict(facecolor='green', alpha=0.1, edgecolor='none'))
-             
+    if x.size < 2:
+        return
+
+    slope, intercept = np.polyfit(x, y, deg=1)
+    correlation = np.corrcoef(x, y)[0, 1]
+    r_squared = float(correlation * correlation)
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.scatter(
+        x,
+        y,
+        s=58,
+        c=PLOT_COLORS["primary"],
+        alpha=0.8,
+        edgecolors="#111111",
+        linewidths=0.35,
+    )
+
+    line_x = np.linspace(float(x.min()), float(x.max()), 120)
+    ax.plot(
+        line_x,
+        slope * line_x + intercept,
+        color=PLOT_COLORS["secondary"],
+        linestyle="--",
+        linewidth=2.0,
+        label=f"Linear fit (R^2={r_squared:.3f})",
+    )
+
+    max_bound = max(float(x.max()), float(y.max()))
+    ax.plot(
+        [0.0, max_bound],
+        [0.0, max_bound],
+        color=PLOT_COLORS["muted"],
+        linestyle=":",
+        linewidth=1.8,
+        label="Ideal 1:1 transfer",
+    )
+
+    ax.set_title("Surrogate vs oracle transferability")
+    ax.set_xlabel("Surrogate similarity drop")
+    ax.set_ylabel("Oracle similarity drop")
+    ax.legend(loc="best")
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path, bbox_inches="tight", dpi=150)
-    plt.close()
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)

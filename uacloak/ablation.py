@@ -1,4 +1,4 @@
-"""Phase 13 ablation study runner for UACloak."""
+"""ablation study runner for UACloak."""
 
 from __future__ import annotations
 
@@ -40,6 +40,15 @@ DEFAULT_EPSILON_VALUES = (0.01, 0.02, 0.03, 0.05, 0.08, 0.10)
 DEFAULT_STEP_VALUES = (10, 25, 50, 100, 150, 200)
 DEFAULT_NORM_EPSILON_VALUES = (0.01, 0.03, 0.05)
 DEFAULT_SURROGATES = ("clip_vit_b32", "resnet18", "resnet50")
+
+PLOT_STYLE = "seaborn-v0_8-whitegrid"
+PLOT_COLORS = {
+    "primary": "#1f4e79",
+    "secondary": "#d95f0e",
+    "accent": "#2a9d8f",
+    "danger": "#a12a2a",
+    "muted": "#5a5a5a",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -797,14 +806,32 @@ def _write_transfer_csv(
             )
 
 
-def _plot_epsilon(rows: Sequence[SettingResult], output_path: Path) -> None:
+def _load_pyplot() -> Any:
     try:
         import matplotlib.pyplot as plt
+
+        plt.style.use(PLOT_STYLE)
+        plt.rcParams.update(
+            {
+                "axes.titlesize": 12,
+                "axes.labelsize": 10,
+                "axes.edgecolor": "#404040",
+                "axes.linewidth": 0.9,
+                "grid.alpha": 0.25,
+                "legend.frameon": True,
+                "legend.framealpha": 0.9,
+            }
+        )
+        return plt
     except Exception as exc:  # pragma: no cover - environment dependent
         raise UACloakError(
             "matplotlib is required to render ablation plots. Install it with `uv add matplotlib` "
             "or run `uv sync --group dev`."
         ) from exc
+
+
+def _plot_epsilon(rows: Sequence[SettingResult], output_path: Path) -> None:
+    plt = _load_pyplot()
 
     eps = [float(row.value) for row in rows]
     mrs_face = [row.mrs_face for row in rows]
@@ -814,14 +841,36 @@ def _plot_epsilon(rows: Sequence[SettingResult], output_path: Path) -> None:
     fig, ax1 = plt.subplots(figsize=(8.0, 5.0))
     ax2 = ax1.twinx()
 
-    ax1.plot(eps, mrs_face, marker="o", label="MRS Face")
-    ax1.plot(eps, mrs_general, marker="s", label="MRS General")
-    ax2.plot(eps, ssim, marker="^", linestyle="--", label="Mean SSIM", color="#2ca02c")
+    ax1.plot(
+        eps,
+        mrs_face,
+        marker="o",
+        linewidth=2.0,
+        color=PLOT_COLORS["primary"],
+        label="MRS Face",
+    )
+    ax1.plot(
+        eps,
+        mrs_general,
+        marker="s",
+        linewidth=2.0,
+        color=PLOT_COLORS["secondary"],
+        label="MRS General",
+    )
+    ax2.plot(
+        eps,
+        ssim,
+        marker="^",
+        linewidth=1.8,
+        linestyle="--",
+        label="Mean SSIM",
+        color=PLOT_COLORS["accent"],
+    )
 
     ax1.set_xlabel("Epsilon")
     ax1.set_ylabel("MRS (Lower is better)")
     ax2.set_ylabel("Mean SSIM (Higher is better)")
-    ax1.set_title("Ablation 1: Epsilon Tradeoff")
+    ax1.set_title("Epsilon Tradeoff: Attack Strength vs Imperceptibility")
 
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
@@ -834,13 +883,7 @@ def _plot_epsilon(rows: Sequence[SettingResult], output_path: Path) -> None:
 
 
 def _plot_steps(rows: Sequence[SettingResult], output_path: Path) -> None:
-    try:
-        import matplotlib.pyplot as plt
-    except Exception as exc:  # pragma: no cover - environment dependent
-        raise UACloakError(
-            "matplotlib is required to render ablation plots. Install it with `uv add matplotlib` "
-            "or run `uv sync --group dev`."
-        ) from exc
+    plt = _load_pyplot()
 
     steps = [int(row.value) for row in rows]
     runtime = [row.runtime_seconds for row in rows]
@@ -858,15 +901,28 @@ def _plot_steps(rows: Sequence[SettingResult], output_path: Path) -> None:
     fig, ax1 = plt.subplots(figsize=(8.0, 5.0))
     ax2 = ax1.twinx()
 
-    ax1.plot(steps, combined_mrs, marker="o", label="Combined MRS")
+    ax1.plot(
+        steps,
+        combined_mrs,
+        marker="o",
+        linewidth=2.0,
+        color=PLOT_COLORS["primary"],
+        label="Combined MRS",
+    )
     ax2.plot(
-        steps, runtime, marker="s", linestyle="--", color="#d62728", label="Runtime (s)"
+        steps,
+        runtime,
+        marker="s",
+        linewidth=1.8,
+        linestyle="--",
+        color=PLOT_COLORS["danger"],
+        label="Runtime (s)",
     )
 
     ax1.set_xlabel("PGD Steps")
     ax1.set_ylabel("Combined MRS")
     ax2.set_ylabel("Runtime (seconds)")
-    ax1.set_title("Ablation 2: Steps vs MRS and Runtime")
+    ax1.set_title("PGD Steps: Convergence vs Runtime")
 
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
@@ -879,13 +935,7 @@ def _plot_steps(rows: Sequence[SettingResult], output_path: Path) -> None:
 
 
 def _plot_loss(rows: Sequence[LossVariantResult], output_path: Path) -> None:
-    try:
-        import matplotlib.pyplot as plt
-    except Exception as exc:  # pragma: no cover - environment dependent
-        raise UACloakError(
-            "matplotlib is required to render ablation plots. Install it with `uv add matplotlib` "
-            "or run `uv sync --group dev`."
-        ) from exc
+    plt = _load_pyplot()
 
     labels = [row.variant for row in rows]
     x = np.arange(len(labels))
@@ -896,25 +946,28 @@ def _plot_loss(rows: Sequence[LossVariantResult], output_path: Path) -> None:
         x - width,
         [row.mrs_face_arcface for row in rows],
         width=width,
+        color=PLOT_COLORS["primary"],
         label="Face Oracle (ArcFace)",
     )
     ax.bar(
         x,
         [row.mrs_face_clip_oracle for row in rows],
         width=width,
+        color=PLOT_COLORS["secondary"],
         label="Face Oracle (CLIP-L/14)",
     )
     ax.bar(
         x + width,
         [row.mrs_general_clip_oracle for row in rows],
         width=width,
+        color=PLOT_COLORS["accent"],
         label="General Oracle (CLIP-L/14)",
     )
 
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=20, ha="right")
     ax.set_ylabel("MRS")
-    ax.set_title("Ablation 3: Loss Formulation")
+    ax.set_title("Loss Design Comparison Across Oracle Targets")
     ax.legend(loc="best")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -924,13 +977,7 @@ def _plot_loss(rows: Sequence[LossVariantResult], output_path: Path) -> None:
 
 
 def _plot_norm(rows: Sequence[NormVariantResult], output_path: Path) -> None:
-    try:
-        import matplotlib.pyplot as plt
-    except Exception as exc:  # pragma: no cover - environment dependent
-        raise UACloakError(
-            "matplotlib is required to render ablation plots. Install it with `uv add matplotlib` "
-            "or run `uv sync --group dev`."
-        ) from exc
+    plt = _load_pyplot()
 
     labels = [f"{row.norm_type}:{row.epsilon:.2f}" for row in rows]
     x = np.arange(len(labels))
@@ -951,14 +998,26 @@ def _plot_norm(rows: Sequence[NormVariantResult], output_path: Path) -> None:
     ]
     ssim_values = [row.mean_ssim for row in rows]
 
-    ax1.bar(x - width / 2, combined_mrs, width=width, label="Combined MRS")
-    ax2.bar(x + width / 2, ssim_values, width=width, label="Mean SSIM", color="#2ca02c")
+    ax1.bar(
+        x - width / 2,
+        combined_mrs,
+        width=width,
+        color=PLOT_COLORS["primary"],
+        label="Combined MRS",
+    )
+    ax2.bar(
+        x + width / 2,
+        ssim_values,
+        width=width,
+        color=PLOT_COLORS["accent"],
+        label="Mean SSIM",
+    )
 
     ax1.set_xticks(x)
     ax1.set_xticklabels(labels, rotation=25, ha="right")
     ax1.set_ylabel("Combined MRS")
     ax2.set_ylabel("Mean SSIM")
-    ax1.set_title("Ablation 4: Norm Type and Budget")
+    ax1.set_title("Norm Constraint and Budget Sensitivity")
 
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
@@ -973,13 +1032,7 @@ def _plot_norm(rows: Sequence[NormVariantResult], output_path: Path) -> None:
 def _plot_transfer_heatmap(
     rows: Sequence[TransferMatrixResult], output_path: Path
 ) -> None:
-    try:
-        import matplotlib.pyplot as plt
-    except Exception as exc:  # pragma: no cover - environment dependent
-        raise UACloakError(
-            "matplotlib is required to render ablation plots. Install it with `uv add matplotlib` "
-            "or run `uv sync --group dev`."
-        ) from exc
+    plt = _load_pyplot()
 
     surrogates = sorted({row.surrogate for row in rows})
     oracles = sorted({row.oracle for row in rows})
@@ -991,18 +1044,19 @@ def _plot_transfer_heatmap(
         matrix[i, j] = row.mrs_general
 
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
-    im = ax.imshow(matrix, cmap="viridis")
+    im = ax.imshow(matrix, cmap="cividis")
     ax.set_xticks(np.arange(len(oracles)))
     ax.set_yticks(np.arange(len(surrogates)))
     ax.set_xticklabels(oracles, rotation=25, ha="right")
     ax.set_yticklabels(surrogates)
-    ax.set_title("Ablation 5: Surrogate to Oracle Transfer Matrix (MRS)")
+    ax.set_title("Surrogate to Oracle Transfer Matrix (MRS)")
 
     for i in range(matrix.shape[0]):
         for j in range(matrix.shape[1]):
             value = matrix[i, j]
             label = "n/a" if np.isnan(value) else f"{value:.3f}"
-            ax.text(j, i, label, ha="center", va="center", color="white")
+            text_color = "black" if (not np.isnan(value) and value > 0.55) else "white"
+            ax.text(j, i, label, ha="center", va="center", color=text_color)
 
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="MRS")
 
@@ -1525,7 +1579,7 @@ def run_ablation_studies(
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run Phase 13 ablation studies and export tables/plots/report."
+        description="Run ablation studies and export tables/plots/report."
     )
     parser.add_argument(
         "--manifest",
@@ -1534,7 +1588,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output-dir",
-        default="ablations",
+        default="results/ablations",
         help="Directory to write ablation outputs.",
     )
     parser.add_argument(
