@@ -212,10 +212,4 @@ marimo/_lsp/
 __marimo__/
 
 pytest-cache*/
-IMPLEMENTATION_PLAN
 
-generate_notebook.py
-profile_cloaking.py
-technical_writeup.ipynb
-walkthrough.md
-tests/fixtures/faces/*.jpg
