@@ -1,4 +1,4 @@
-"""CLI entrypoint for UACloak Phase 13 ablations."""
+"""CLI entrypoint for UACloak ablations."""
 
 from __future__ import annotations
 
