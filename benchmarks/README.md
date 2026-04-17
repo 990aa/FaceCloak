@@ -1,6 +1,6 @@
 # Benchmark Dataset Guide
 
-This folder contains manifest files used by `eval.py`.
+This folder contains manifest files used by `eval.py` and `uacloak/benchmarking.py`.
 
 It also contains ablation manifests used by `ablation.py`.
 
@@ -58,13 +58,19 @@ For ablations, see `ablation_sample_manifest.csv`.
 ## Run
 
 ```powershell
-python eval.py --manifest benchmarks/sample_manifest.csv --output-csv benchmark_metrics.csv --output-summary benchmark_summary.md
+python eval.py --manifest benchmarks/sample_manifest.csv --output-csv results/benchmark_metrics.csv --output-summary results/benchmark_summary.md
 ```
 
 For a full benchmark, point `--manifest` to your 50-100 image-pair manifest.
 
+For fixed-condition attack benchmarks (PGD + FGSM + runtime + robustness):
+
+```powershell
+python -m uacloak.benchmarking --manifest benchmarks/benchmarking_manifest.csv --output-csv results/benchmark_phase14_metrics.csv --output-summary results/benchmark_phase14_summary.md --output-json results/benchmark_phase14_summary.json
+```
+
 Run ablations:
 
 ```powershell
-python ablation.py --manifest benchmarks/ablation_sample_manifest.csv --output-dir ablations --allow-small-set --skip-convnext
+python ablation.py --manifest benchmarks/ablation_sample_manifest.csv --output-dir results/ablations --allow-small-set --skip-convnext
 ```

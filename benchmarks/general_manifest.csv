@@ -1,7 +1,6 @@
-image_id,modality,image_path
-cat_1,general,C:\Users\ahada\Documents\abdulahad\facecloak\tests\fixtures\general\cat_1.jpg
-dog_1,general,C:\Users\ahada\Documents\abdulahad\facecloak\tests\fixtures\general\dog_1.jpg
-car_1,general,C:\Users\ahada\Documents\abdulahad\facecloak\tests\fixtures\general\car_1.jpg
-building_1,general,C:\Users\ahada\Documents\abdulahad\facecloak\tests\fixtures\general\building_1.jpg
-landscape_1,general,C:\Users\ahada\Documents\abdulahad\facecloak\tests\fixtures\general\landscape_1.jpg
-document_1,general,C:\Users\ahada\Documents\abdulahad\facecloak\tests\fixtures\general\document_1.jpg
+image_id,modality,category,image_path,reference_path
+dog_1,general,scene,../tests/fixtures/general/dog_1.jpg,../tests/fixtures/general/dog_1_ref.jpg
+car_1,general,product,../tests/fixtures/general/car_1.jpg,../tests/fixtures/general/car_1_ref.jpg
+landscape_1,general,scene,../tests/fixtures/general/landscape_1.jpg,../tests/fixtures/general/landscape_1_ref.jpg
+building_1,general,scene,../tests/fixtures/general/building_1.jpg,../tests/fixtures/general/building_1_ref.jpg
+document_1,general,document,../tests/fixtures/general/document_1.jpg,../tests/fixtures/general/document_1_ref.jpg

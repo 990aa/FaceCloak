@@ -1,8 +1,7 @@
 image_id,modality,category,image_path,reference_path
 obama,face,,../tests/fixtures/faces/obama_a.jpg,../tests/fixtures/faces/obama_b.jpg
-cat,general,scene,../tests/fixtures/general/cat_1.jpg,../tests/fixtures/general/cat_1.jpg
-dog,general,scene,../tests/fixtures/general/dog_1.jpg,../tests/fixtures/general/dog_1.jpg
-car,general,product,../tests/fixtures/general/car_1.jpg,../tests/fixtures/general/car_1.jpg
-building,general,scene,../tests/fixtures/general/building_1.jpg,../tests/fixtures/general/building_1.jpg
-landscape,general,scene,../tests/fixtures/general/landscape_1.jpg,../tests/fixtures/general/landscape_1.jpg
-document,general,document,../tests/fixtures/general/document_1.jpg,../tests/fixtures/general/document_1.jpg
+dog,general,scene,../tests/fixtures/general/dog_1.jpg,../tests/fixtures/general/dog_1_ref.jpg
+car,general,product,../tests/fixtures/general/car_1.jpg,../tests/fixtures/general/car_1_ref.jpg
+building,general,scene,../tests/fixtures/general/building_1.jpg,../tests/fixtures/general/building_1_ref.jpg
+landscape,general,scene,../tests/fixtures/general/landscape_1.jpg,../tests/fixtures/general/landscape_1_ref.jpg
+document,general,document,../tests/fixtures/general/document_1.jpg,../tests/fixtures/general/document_1_ref.jpg
