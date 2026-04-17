@@ -1,0 +1,10 @@
+image_id,modality,image_path
+obama_a,face,../tests/fixtures/faces/obama_a.jpg
+obama_b,face,../tests/fixtures/faces/obama_b.jpg
+george_a,face,../tests/fixtures/faces/george_a.jpg
+cat_1,general,../tests/fixtures/general/cat_1.jpg
+dog_1,general,../tests/fixtures/general/dog_1.jpg
+car_1,general,../tests/fixtures/general/car_1.jpg
+building_1,general,../tests/fixtures/general/building_1.jpg
+landscape_1,general,../tests/fixtures/general/landscape_1.jpg
+document_1,general,../tests/fixtures/general/document_1.jpg

@@ -42,7 +42,7 @@ Required columns:
 - `modality` (`face` or `general`)
 - `image_path`
 
-For full Phase 13 runs, use a fixed held-out set with exactly 40 rows:
+For full runs, use a fixed held-out set with exactly 40 rows:
 
 - 20 face rows
 - 20 general rows
