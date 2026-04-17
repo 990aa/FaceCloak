@@ -30,5 +30,5 @@ def test_render_runtime_markdown_contains_environment_summary() -> None:
     assert "Torch Cache" in markdown
     assert "transformers" in markdown
     # Must NOT mention phase numbers
-    assert "Phase 2" not in markdown
-    assert "Phase 3" not in markdown
+    assert "Academic" not in markdown
+    assert "Academic" not in markdown

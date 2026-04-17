@@ -50,7 +50,7 @@ def test_interface_has_no_phase_references() -> None:
     from uacloak import interface
 
     source = inspect.getsource(interface)
-    # Should not contain "Phase 2", "Phase 3" etc. in user-facing strings
+    # Should not contain "Academic", "Academic" etc. in user-facing strings
     import re
 
     matches = re.findall(r"\bPhase [0-9]\b", source)
