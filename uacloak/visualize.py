@@ -111,7 +111,11 @@ def plot_result_grid(
         oracle_clean = float(_row_value(row, "oracle_clean_similarity", math.nan))
         oracle_pgd = float(_row_value(row, "oracle_similarity_pgd", math.nan))
         ssim_score = float(_row_value(row, "ssim_score", math.nan))
-        drop = oracle_clean - oracle_pgd if not (math.isnan(oracle_clean) or math.isnan(oracle_pgd)) else math.nan
+        drop = (
+            oracle_clean - oracle_pgd
+            if not (math.isnan(oracle_clean) or math.isnan(oracle_pgd))
+            else math.nan
+        )
 
         left_ax = axes[index, 0]
         right_ax = axes[index, 1]
@@ -152,8 +156,12 @@ def plot_embedding_pca(
     if num_samples == 0:
         return
 
-    x_orig = torch.stack([embed.view(-1).float() for embed in original_embeddings[:num_samples]])
-    x_cloak = torch.stack([embed.view(-1).float() for embed in cloaked_embeddings[:num_samples]])
+    x_orig = torch.stack(
+        [embed.view(-1).float() for embed in original_embeddings[:num_samples]]
+    )
+    x_cloak = torch.stack(
+        [embed.view(-1).float() for embed in cloaked_embeddings[:num_samples]]
+    )
 
     x_all = torch.cat([x_orig, x_cloak], dim=0)
     x_all_centered = x_all - x_all.mean(dim=0, keepdim=True)

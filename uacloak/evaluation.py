@@ -114,9 +114,7 @@ def load_manifest(manifest_path: Path) -> list[BenchmarkSample]:
         missing = required.difference(fieldnames)
         if missing:
             missing_cols = ", ".join(sorted(missing))
-            raise UACloakError(
-                f"Manifest is missing required columns: {missing_cols}"
-            )
+            raise UACloakError(f"Manifest is missing required columns: {missing_cols}")
 
         rows: list[BenchmarkSample] = []
         for row in reader:

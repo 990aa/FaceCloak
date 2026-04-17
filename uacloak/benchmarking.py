@@ -1137,9 +1137,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.max_images > 0:
         samples = samples[: args.max_images]
 
-    rows = run_benchmark_suite(
-        samples, success_threshold=float(args.success_threshold)
-    )
+    rows = run_benchmark_suite(samples, success_threshold=float(args.success_threshold))
     summary = summarize_benchmark(rows, success_threshold=float(args.success_threshold))
 
     write_benchmark_metrics_csv(rows, output_csv)

@@ -32,9 +32,7 @@ from uacloak.pipeline import (
 )
 from uacloak.project import PROJECT_NAME
 
-# ---------------------------------------------------------------------------
 # CSS — dark-on-light theme with explicit text colours for HF Spaces compat
-# ---------------------------------------------------------------------------
 
 APP_CSS = """
 /* ── Google Font ─────────────────────────────────────────────── */
@@ -196,9 +194,7 @@ APP_THEME = gr.themes.Base(
 )
 
 
-# ---------------------------------------------------------------------------
 # Score formatting helpers
-# ---------------------------------------------------------------------------
 
 
 def _pct(similarity: float) -> str:
@@ -241,9 +237,7 @@ def _coerce_image_input(image: Any, field_name: str) -> Image.Image:
             candidate = image.get(key)
             if isinstance(candidate, str) and candidate:
                 return _load_image_from_path(candidate, field_name)
-        raise UACloakError(
-            f"{field_name} payload is missing a usable file path."
-        )
+        raise UACloakError(f"{field_name} payload is missing a usable file path.")
 
     if isinstance(image, np.ndarray):
         array = np.asarray(image)
@@ -258,18 +252,12 @@ def _coerce_image_input(image: Any, field_name: str) -> Image.Image:
             mode = "RGB" if array.shape[2] == 3 else "RGBA"
             return Image.fromarray(array, mode=mode).convert("RGB")
 
-        raise UACloakError(
-            f"{field_name} has unsupported array shape: {array.shape}."
-        )
+        raise UACloakError(f"{field_name} has unsupported array shape: {array.shape}.")
 
-    raise UACloakError(
-        f"{field_name} has unsupported type: {type(image).__name__}."
-    )
+    raise UACloakError(f"{field_name} has unsupported type: {type(image).__name__}.")
 
 
-# ---------------------------------------------------------------------------
 # Core processing — generator so Gradio streams progress (Step 28)
-# ---------------------------------------------------------------------------
 
 
 def generate_cloak(image, epsilon, num_steps, alpha_fraction):
@@ -487,9 +475,7 @@ def generate_cloak(image, epsilon, num_steps, alpha_fraction):
     )
 
 
-# ---------------------------------------------------------------------------
 # Compare-images tab (kept for technical reviewers)
-# ---------------------------------------------------------------------------
 
 
 def compare_faces(image_a, image_b):
@@ -553,9 +539,7 @@ def compare_faces(image_a, image_b):
         raise gr.Error(f"Unexpected comparison error: {exc}") from exc
 
 
-# ---------------------------------------------------------------------------
 # Build the Gradio app
-# ---------------------------------------------------------------------------
 
 
 def build_demo() -> gr.Blocks:  # noqa: C901
