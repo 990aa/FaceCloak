@@ -15,7 +15,6 @@ from uacloak.cloaking import (
     cloak_face_tensor,
     cloak_general_image,
 )
-from uacloak.environment import render_runtime_markdown
 from uacloak.errors import UACloakError
 from uacloak.models import get_clip_model
 from uacloak.pipeline import (
@@ -32,7 +31,7 @@ from uacloak.pipeline import (
 )
 from uacloak.project import PROJECT_NAME
 
-# CSS — dark-on-light theme with explicit text colours for HF Spaces compat
+# CSS — high-contrast light theme with explicit text colors for all Gradio surfaces
 
 APP_CSS = """
 /* ── Google Font ─────────────────────────────────────────────── */
@@ -42,10 +41,14 @@ APP_CSS = """
 * { box-sizing: border-box; }
 
 :root {
-    --uac-bg: #f8fafc;
+    --uac-bg: #f3f6fb;
     --uac-surface: #ffffff;
+    --uac-surface-alt: #eef2ff;
     --uac-text: #0f172a;
     --uac-text-muted: #334155;
+    --uac-border: #cbd5e1;
+    --uac-accent: #4f46e5;
+    --uac-accent-strong: #4338ca;
 }
 
 body, .gradio-container {
@@ -62,7 +65,18 @@ body, .gradio-container {
 .gradio-container .markdown h2,
 .gradio-container .markdown h3,
 .gradio-container label,
+.gradio-container legend,
 .gradio-container span {
+    color: var(--uac-text) !important;
+}
+
+.gradio-container p,
+.gradio-container li,
+.gradio-container strong,
+.gradio-container button,
+.gradio-container input,
+.gradio-container textarea,
+.gradio-container select {
     color: var(--uac-text) !important;
 }
 
@@ -73,11 +87,11 @@ body, .gradio-container {
 
 /* ── Hero section ────────────────────────────────────────────── */
 #hero {
-    background: linear-gradient(135deg, #312e81 0%, #4c1d95 40%, #7c3aed 100%);
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #4f46e5 100%);
     border-radius: 20px;
     padding: 2.5rem 2rem 2rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 20px 60px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 20px 60px rgba(49, 46, 129, 0.25);
     text-align: center;
 }
 #hero .markdown, #hero .markdown p, #hero .markdown h1,
@@ -88,9 +102,9 @@ body, .gradio-container {
 /* ── Panel cards ─────────────────────────────────────────────── */
 .panel {
     background: var(--uac-surface) !important;
-    border: 1px solid rgba(99, 102, 241, 0.12) !important;
+    border: 1px solid var(--uac-border) !important;
     border-radius: 16px !important;
-    box-shadow: 0 4px 24px rgba(99, 102, 241, 0.07) !important;
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06) !important;
     padding: 1rem 1.25rem !important;
 }
 .panel *, .panel .markdown, .panel .markdown p, .panel .markdown li {
@@ -99,33 +113,34 @@ body, .gradio-container {
 
 /* ── Accordion (What do these settings mean?) ────────────────── */
 .accordion, details {
-    background: #1e293b !important;
+    background: #f8fafc !important;
     border-radius: 12px !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
+    border: 1px solid var(--uac-border) !important;
 }
 details summary, details summary * {
-    color: #f8fafc !important;
+    color: var(--uac-text) !important;
     font-weight: 600 !important;
 }
 details *, details .markdown, details .markdown p {
-    color: #e2e8f0 !important;
+    color: var(--uac-text-muted) !important;
 }
 
 /* ── Sliders and settings ────────────────────────────────────── */
 .gr-slider label, .gr-slider .label-wrap span, input[type=range] + span {
-    color: #f8fafc !important;
+    color: var(--uac-text) !important;
     font-weight: 600 !important;
 }
 
 .gr-slider {
-    background: #1e293b !important;
+    background: var(--uac-surface) !important;
     padding: 1rem !important;
     border-radius: 12px !important;
+    border: 1px solid var(--uac-border) !important;
 }
 
 /* ── Buttons ─────────────────────────────────────────────────── */
 #cloak-btn {
-    background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
+    background: linear-gradient(135deg, var(--uac-accent), #6366f1) !important;
     color: #ffffff !important;
     border: none !important;
     border-radius: 12px !important;
@@ -152,11 +167,16 @@ details *, details .markdown, details .markdown p {
 /* ── Status textbox ──────────────────────────────────────────── */
 #status-box textarea {
     background: #0f172a !important;
-    color: #a5f3fc !important;
+    color: #e2e8f0 !important;
     font-family: 'Consolas', 'Courier New', monospace !important;
     font-size: 0.85rem !important;
     border-radius: 10px !important;
     border: 1px solid #334155 !important;
+}
+
+#status-box label,
+#status-box span {
+    color: var(--uac-text) !important;
 }
 
 /* ── Score badges ────────────────────────────────────────────── */
@@ -166,22 +186,39 @@ details *, details .markdown, details .markdown p {
     font-weight: 600 !important;
     border-radius: 10px !important;
     color: #0f172a !important;
-    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+    border: 1px solid var(--uac-border) !important;
     background: #ffffff !important;
 }
 
 /* ── Tab strip ───────────────────────────────────────────────── */
 button[role="tab"] {
-    color: #1e293b !important;
+    color: var(--uac-text) !important;
     background: #e2e8f0 !important;
     border-radius: 10px 10px 0 0 !important;
     font-weight: 600 !important;
     font-size: 1.05rem !important;
 }
 button[role="tab"][aria-selected="true"] {
-    color: #4f46e5 !important;
+    color: var(--uac-accent-strong) !important;
     background: #ffffff !important;
-    border-bottom-color: #4f46e5 !important;
+    border-bottom-color: var(--uac-accent-strong) !important;
+}
+
+/* ── Footer, settings modal, and API docs ────────────────────── */
+.gradio-container footer,
+.gradio-container footer *,
+.gradio-container [role="dialog"],
+.gradio-container [role="dialog"] *,
+.gradio-container .settings,
+.gradio-container .settings *,
+.gradio-container .api-docs,
+.gradio-container .api-docs * {
+    color: var(--uac-text) !important;
+}
+
+.gradio-container [role="dialog"] {
+    background: #ffffff !important;
+    border: 1px solid var(--uac-border) !important;
 }
 """
 
@@ -198,12 +235,14 @@ APP_THEME = gr.themes.Base(
 
 
 def _pct(similarity: float) -> str:
-    return f"{max(0.0, min(100.0, similarity * 100.0)):.1f}%"
+    return f"{similarity * 100.0:.1f}%"
 
 
 def _score_line(label: str, similarity: float) -> str:
-    pct = max(0.0, min(100.0, similarity * 100.0))
-    return f"Match Score: {pct:.1f}%  |  {label}"
+    return (
+        f"Match Score: {similarity * 100.0:.1f}%"
+        f"  |  Cosine: {similarity:.4f}  |  {label}"
+    )
 
 
 def _format_detection_probability(probability: float | None) -> str:
