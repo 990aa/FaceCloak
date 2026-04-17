@@ -185,6 +185,9 @@ def cloak_face_tensor(
 
     loss_history: list[float] = []
     similarity_history: list[float] = []
+    best_face_similarity = float("inf")
+    best_batch = original_batch.detach().clone()
+    best_delta = torch.zeros_like(original_batch).detach()
 
     for step in range(parameters.num_steps):
         if delta.grad is not None:
@@ -223,6 +226,12 @@ def cloak_face_tensor(
             ).mean()
             objective = objective - parameters.clip_weight * clip_cosine
 
+        current_face_sim = float(face_cosine.detach().item())
+        if current_face_sim < best_face_similarity:
+            best_face_similarity = current_face_sim
+            best_batch = cloaked_batch.detach().clone()
+            best_delta = (best_batch - original_batch).detach().clone()
+
         objective = objective - parameters.l2_lambda * delta.pow(2).mean()
         objective.backward()
 
@@ -234,14 +243,13 @@ def cloak_face_tensor(
                 - original_batch
             )
 
-        current_face_sim = float(face_cosine.detach().item())
         loss_history.append(float(objective.detach().item()))
         similarity_history.append(current_face_sim)
 
         if progress_callback is not None:
             progress_callback(step + 1, parameters.num_steps, current_face_sim)
 
-    final_batch = torch.clamp(original_batch + delta, DISPLAY_MIN, DISPLAY_MAX).detach()
+    final_batch = best_batch.detach()
     final_embedding = F.normalize(model(final_batch), p=2, dim=1).detach()
     final_similarity = float(
         F.cosine_similarity(original_embedding, final_embedding, dim=1).mean().item()
@@ -272,7 +280,7 @@ def cloak_face_tensor(
             .item()
         )
 
-    delta_cpu = delta.detach().cpu()
+    delta_cpu = best_delta.detach().cpu()
     final_cpu = final_batch.detach().cpu()
     original_cpu = original_batch.detach().cpu()
 
@@ -336,6 +344,9 @@ def cloak_general_image(
     delta = torch.zeros_like(original_224, requires_grad=True)
     loss_history: list[float] = []
     similarity_history: list[float] = []
+    best_similarity = float("inf")
+    best_224 = original_224.detach().clone()
+    best_delta = torch.zeros_like(original_224).detach()
 
     for step in range(parameters.num_steps):
         if delta.grad is not None:
@@ -346,6 +357,12 @@ def cloak_general_image(
         cosine = F.cosine_similarity(
             original_embedding, cloaked_embedding, dim=1
         ).mean()
+        current_sim = float(cosine.detach().item())
+        if current_sim < best_similarity:
+            best_similarity = current_sim
+            best_224 = cloaked_224.detach().clone()
+            best_delta = delta.detach().clone()
+
         objective = -cosine - parameters.l2_lambda * delta.pow(2).mean()
         objective.backward()
 
@@ -354,14 +371,13 @@ def cloak_general_image(
             delta.clamp_(-parameters.epsilon, parameters.epsilon)
             delta.copy_(torch.clamp(original_224 + delta, 0.0, 1.0) - original_224)
 
-        current_sim = float(cosine.detach().item())
         loss_history.append(float(objective.detach().item()))
         similarity_history.append(current_sim)
 
         if progress_callback is not None:
             progress_callback(step + 1, parameters.num_steps, current_sim)
 
-    final_224 = torch.clamp(original_224 + delta, 0.0, 1.0).detach()
+    final_224 = best_224.detach()
     final_embedding = _clip_embedding_from_unit_batch(final_224, clip_model).detach()
     final_similarity = float(
         F.cosine_similarity(original_embedding, final_embedding, dim=1).mean().item()
@@ -372,7 +388,7 @@ def cloak_general_image(
         size=(original_width, original_height),
     ).to(clip_device)
     delta_full = F.interpolate(
-        delta.detach(),
+        best_delta.detach(),
         size=(original_height, original_width),
         mode="bilinear",
         align_corners=False,
