@@ -1,0 +1,4 @@
+surrogate,oracle,mrs_general
+clip_vit_b32,clip_vit_l14,0.893467
+resnet18,clip_vit_l14,0.923122
+resnet50,clip_vit_l14,0.930840

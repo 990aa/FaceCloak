@@ -1,0 +1,5 @@
+variant,mrs_face_arcface,mrs_face_clip_oracle,mrs_general_clip_oracle,mean_ssim,runtime_seconds
+clip_cosine_only,0.992954,0.964923,0.893467,0.952028,473.428863
+clip_l2_only,1.000000,1.000000,0.891003,0.958640,517.970622
+facenet_cosine_only,0.894216,0.923976,,0.948756,352.460916
+combined_clip_facenet,0.889345,0.871534,0.893467,0.934907,550.172657
