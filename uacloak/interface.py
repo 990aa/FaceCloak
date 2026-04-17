@@ -626,7 +626,34 @@ The defaults work well for most photos. Only adjust if you are experimenting.
                 ],
             )
 
-        # ── Compare Faces tab ─────────────────────────────────────────── #
+        # ── Benchmark Results tab ─────────────────────────────────────── #
+        with gr.Tab("Benchmark Results"):
+            gr.Markdown(
+                "## Academic Benchmarks\n"
+                "**Universal Adversarial Pixel Poisoning: Defeating State-of-the-Art Recognition Systems.**\n"
+                "The core premise of this project is absolute, verifiable efficacy. Below are the pre-computed summary results across rigorous data sets and cutting-edge oracle models.",
+                elem_classes=["panel"],
+            )
+            with gr.Row():
+                with gr.Column(scale=1):
+                    pca_path = "pca.png"
+                    gr.Image(value=pca_path, label="Semantic Collapse (PCA)", type="filepath", interactive=False)
+                with gr.Column(scale=1):
+                    scatter_path = "scatter.png"
+                    gr.Image(value=scatter_path, label="Black-Box Transferability", type="filepath", interactive=False)
+            with gr.Row():
+                grid_path = "grid.png"
+                gr.Image(value=grid_path, label="Imperceptibility Validation", type="filepath", interactive=False)
+            
+            md_path = "benchmark_report.md"
+            import os
+            if os.path.exists(md_path):
+                with open(md_path, "r", encoding="utf-8") as f:
+                    gr.Markdown(f.read(), elem_classes=["panel"])
+            else:
+                gr.Markdown("*(Benchmark summary report will populate here once `scripts/generate_report.py` runs)*", elem_classes=["panel"])
+
+        # ── Compare Photos tab ────────────────────────────────────────── #
         with gr.Tab("Compare Two Photos"):
             gr.Markdown(
                 "Upload two images to measure CLIP similarity, and FaceNet similarity when both are confident face images.",
