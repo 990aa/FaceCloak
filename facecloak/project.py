@@ -24,7 +24,7 @@ PINNED_RUNTIME_DEPENDENCIES: tuple[tuple[str, str], ...] = (
     ("facenet-pytorch", "2.6.0"),
     ("Pillow", "10.2.0"),
     ("numpy", "1.26.4"),
-    ("scikit-image", "0.22.0"),
+    ("scikit-image", "0.24.0"),
     ("gradio", "6.12.0"),
     ("huggingface-hub", "0.36.2"),
     ("transformers", "4.41.2"),

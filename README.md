@@ -190,7 +190,3 @@ uv run pytest -v -m integration    # tests with real portrait images
 uv run python eval.py --manifest benchmarks/sample_manifest.csv --output-csv benchmark_metrics.csv --output-summary benchmark_summary.md
 ```
 
-## License
-
-MIT License
-Copyright (c) 990aa
