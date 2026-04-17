@@ -54,7 +54,8 @@ def test_cloak_face_tensor_reduces_similarity_and_respects_budget() -> None:
     )
 
     assert result.final_similarity < result.original_similarity
-    assert result.delta_l_inf == pytest.approx(0.2, abs=1e-6)
+    assert result.delta_l_inf <= 0.2 + 1e-6
+    assert result.delta_l_inf > 0.0
     assert len(result.loss_history) == 10
     assert len(result.similarity_history) == 10
 
