@@ -601,7 +601,7 @@ def _run_general_sample(
     )
 
 
-def run_phase14_benchmark(
+def run_benchmark_suite(
     samples: Sequence[BenchmarkSample],
     *,
     success_threshold: float = BENCHMARK_SUCCESS_THRESHOLD,
@@ -656,7 +656,7 @@ def _p(values: Sequence[float], percentile: float) -> float:
     return float(np.percentile(values, percentile)) if values else math.nan
 
 
-def summarize_phase14(
+def summarize_benchmark(
     rows: Sequence[BenchmarkRow], *, success_threshold: float
 ) -> BenchmarkSummary:
     valid = [row for row in rows if row.error is None]
@@ -843,7 +843,7 @@ def _fmt(value: float | int | str) -> str:
     return f"{value:.4f}"
 
 
-def write_phase14_metrics_csv(rows: Sequence[BenchmarkRow], output_csv: Path) -> None:
+def write_benchmark_metrics_csv(rows: Sequence[BenchmarkRow], output_csv: Path) -> None:
     output_csv.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
         "image_id",
@@ -890,7 +890,7 @@ def _markdown_table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> st
     return "\n".join([head, sep, *body])
 
 
-def write_phase14_summary_markdown(
+def write_benchmark_summary_markdown(
     summary: BenchmarkSummary, output_path: Path
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1079,7 +1079,7 @@ def write_phase14_summary_markdown(
     output_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def write_phase14_summary_json(summary: BenchmarkSummary, output_path: Path) -> None:
+def write_benchmark_summary_json(summary: BenchmarkSummary, output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     payload = asdict(summary)
@@ -1097,17 +1097,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output-csv",
-        default="results/benchmark_phase14_metrics.csv",
+        default="results/benchmark_metrics.csv",
         help="Path to write per-sample benchmark metrics CSV.",
     )
     parser.add_argument(
         "--output-summary",
-        default="results/benchmark_phase14_summary.md",
+        default="results/benchmark_summary.md",
         help="Path to write benchmark summary markdown.",
     )
     parser.add_argument(
         "--output-json",
-        default="results/benchmark_phase14_summary.json",
+        default="results/benchmark_summary.json",
         help="Path to write benchmark summary JSON.",
     )
     parser.add_argument(
@@ -1137,14 +1137,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.max_images > 0:
         samples = samples[: args.max_images]
 
-    rows = run_phase14_benchmark(
+    rows = run_benchmark_suite(
         samples, success_threshold=float(args.success_threshold)
     )
-    summary = summarize_phase14(rows, success_threshold=float(args.success_threshold))
+    summary = summarize_benchmark(rows, success_threshold=float(args.success_threshold))
 
-    write_phase14_metrics_csv(rows, output_csv)
-    write_phase14_summary_markdown(summary, output_summary)
-    write_phase14_summary_json(summary, output_json)
+    write_benchmark_metrics_csv(rows, output_csv)
+    write_benchmark_summary_markdown(summary, output_summary)
+    write_benchmark_summary_json(summary, output_json)
 
     print("benchmark complete.")
     print(f"- Metrics CSV: {output_csv}")

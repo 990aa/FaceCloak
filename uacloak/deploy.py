@@ -16,7 +16,7 @@ from uacloak.project import (
     SPACE_URL_TEMPLATE,
 )
 
-HF_TOKEN_ENV_VAR = "FACECLOAK_HF_TOKEN"
+HF_TOKEN_ENV_VAR = "UACLOAK_HF_TOKEN"
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,7 +68,7 @@ def default_space_repo_id(api: HfApi, token: str) -> str:
         raise UACloakError(
             "Could not determine the Hugging Face username from the provided token."
         )
-    return f"{username}/{PROJECT_SLUG}"
+    return f"a-01a/{PROJECT_SLUG}"
 
 
 def create_or_update_space(

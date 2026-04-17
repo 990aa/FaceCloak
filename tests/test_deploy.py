@@ -58,10 +58,10 @@ def test_read_env_file_parses_simple_key_values() -> None:
     shutil.rmtree(temp_dir)
 
 
-def test_default_space_repo_id_uses_hf_username() -> None:
+def test_default_space_repo_id_uses_project_repo() -> None:
     repo_id = default_space_repo_id(DummyApi(), "hf_test_token")
 
-    assert repo_id == "example-user/uacloak"
+    assert repo_id == "a-01a/universal-adversarial-cloak"
 
 
 def test_create_or_update_space_uses_space_repo_settings() -> None:
@@ -74,13 +74,13 @@ def test_create_or_update_space_uses_space_repo_settings() -> None:
     result = create_or_update_space(
         api=api,
         token="hf_test_token",
-        repo_id="example-user/uacloak",
+        repo_id="a-01a/universal-adversarial-cloak",
         folder_path=folder_path,
     )
 
     assert api.created["repo_type"] == "space"
     assert api.created["space_sdk"] == "gradio"
     assert api.uploaded["repo_type"] == "space"
-    assert result.repo_id == "example-user/uacloak"
+    assert result.repo_id == "a-01a/universal-adversarial-cloak"
     assert result.runtime_stage == "BUILDING"
     shutil.rmtree(temp_dir)
