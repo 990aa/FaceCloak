@@ -5,8 +5,8 @@ from __future__ import annotations
 import gradio as gr
 from PIL import Image
 
-from facecloak.interface import build_demo
-from facecloak.project import PROJECT_NAME
+from uacloak.interface import build_demo
+from uacloak.project import PROJECT_NAME
 
 
 def test_build_demo_returns_gradio_blocks_with_project_title() -> None:
@@ -18,7 +18,7 @@ def test_build_demo_returns_gradio_blocks_with_project_title() -> None:
 
 def test_generate_cloak_raises_gracefully_when_image_is_none() -> None:
     """generate_cloak must raise gr.Error for missing input (Step 30)."""
-    from facecloak.interface import generate_cloak
+    from uacloak.interface import generate_cloak
 
     gen = generate_cloak(None, 0.03, 20, 0.1)
     try:
@@ -29,7 +29,7 @@ def test_generate_cloak_raises_gracefully_when_image_is_none() -> None:
 
 
 def test_compare_faces_requires_both_images() -> None:
-    from facecloak.interface import compare_faces
+    from uacloak.interface import compare_faces
 
     blank = Image.new("RGB", (16, 16), "white")
     try:
@@ -42,12 +42,12 @@ def test_compare_faces_requires_both_images() -> None:
 
 def test_interface_has_no_phase_references() -> None:
     """The interface markdown copy must not mention phase numbers."""
-    from facecloak.interface import build_demo
+    from uacloak.interface import build_demo
 
     demo = build_demo()
     # The demo object doesn't expose raw text easily; check the source module
     import inspect
-    from facecloak import interface
+    from uacloak import interface
 
     source = inspect.getsource(interface)
     # Should not contain "Phase 2", "Phase 3" etc. in user-facing strings
@@ -60,7 +60,7 @@ def test_interface_has_no_phase_references() -> None:
 
 def test_interface_mentions_oracle_validation_copy() -> None:
     import inspect
-    from facecloak import interface
+    from uacloak import interface
 
     source = inspect.getsource(interface)
     assert "About Our Validation" in source

@@ -7,7 +7,7 @@ from PIL import Image
 import torch
 import torch.nn.functional as F
 
-from facecloak.cloaking import (
+from uacloak.cloaking import (
     CloakHyperparameters,
     cloak_face_tensor,
     cloak_general_image,

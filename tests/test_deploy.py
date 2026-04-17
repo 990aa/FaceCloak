@@ -2,7 +2,7 @@ from pathlib import Path
 import shutil
 import uuid
 
-from facecloak.deploy import (
+from uacloak.deploy import (
     HF_TOKEN_ENV_VAR,
     create_or_update_space,
     default_space_repo_id,
@@ -61,7 +61,7 @@ def test_read_env_file_parses_simple_key_values() -> None:
 def test_default_space_repo_id_uses_hf_username() -> None:
     repo_id = default_space_repo_id(DummyApi(), "hf_test_token")
 
-    assert repo_id == "example-user/facecloak"
+    assert repo_id == "example-user/uacloak"
 
 
 def test_create_or_update_space_uses_space_repo_settings() -> None:
@@ -74,13 +74,13 @@ def test_create_or_update_space_uses_space_repo_settings() -> None:
     result = create_or_update_space(
         api=api,
         token="hf_test_token",
-        repo_id="example-user/facecloak",
+        repo_id="example-user/uacloak",
         folder_path=folder_path,
     )
 
     assert api.created["repo_type"] == "space"
     assert api.created["space_sdk"] == "gradio"
     assert api.uploaded["repo_type"] == "space"
-    assert result.repo_id == "example-user/facecloak"
+    assert result.repo_id == "example-user/uacloak"
     assert result.runtime_stage == "BUILDING"
     shutil.rmtree(temp_dir)

@@ -7,12 +7,12 @@ from pathlib import Path
 from PIL import Image
 import pytest
 
-from facecloak.ablation import (
+from uacloak.ablation import (
     _parse_float_list,
     _parse_int_list,
     load_ablation_manifest,
 )
-from facecloak.errors import FaceCloakError
+from uacloak.errors import UACloakError
 
 
 def test_load_ablation_manifest_parses_rows(tmp_path: Path) -> None:
@@ -43,7 +43,7 @@ def test_load_ablation_manifest_enforces_fixed_set_by_default(tmp_path: Path) ->
         encoding="utf-8",
     )
 
-    with pytest.raises(FaceCloakError, match="exactly 40 rows"):
+    with pytest.raises(UACloakError, match="exactly 40 rows"):
         load_ablation_manifest(manifest)
 
 

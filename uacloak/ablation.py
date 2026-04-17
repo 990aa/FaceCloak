@@ -1,4 +1,4 @@
-"""Phase 13 ablation study runner for FaceCloak."""
+"""Phase 13 ablation study runner for UACloak."""
 
 from __future__ import annotations
 
@@ -15,20 +15,20 @@ from PIL import Image
 import torch
 import torch.nn.functional as F
 
-from facecloak.errors import FaceCloakError
-from facecloak.evaluation import (
+from uacloak.errors import UACloakError
+from uacloak.evaluation import (
     ArcFaceOracle,
     ORACLE_CLIP_MODEL_ID,
     compute_ssim_score,
     load_oracle_clip_backbone,
 )
-from facecloak.models import (
+from uacloak.models import (
     CLIP_IMAGE_SIZE,
     configure_torch_cache,
     get_clip_model,
     get_embedding_model,
 )
-from facecloak.pipeline import (
+from uacloak.pipeline import (
     _prepare_face_batch,
     detect_primary_face,
     ensure_rgb,
@@ -124,7 +124,7 @@ def load_ablation_manifest(
     """
 
     if not manifest_path.exists():
-        raise FaceCloakError(f"Ablation manifest not found: {manifest_path}")
+        raise UACloakError(f"Ablation manifest not found: {manifest_path}")
 
     with manifest_path.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -133,7 +133,7 @@ def load_ablation_manifest(
         required = {"image_id", "modality", "image_path"}
         missing = required.difference(fieldnames)
         if missing:
-            raise FaceCloakError(
+            raise UACloakError(
                 f"Ablation manifest is missing columns: {', '.join(sorted(missing))}"
             )
 
@@ -144,13 +144,13 @@ def load_ablation_manifest(
             image_path_raw = (row.get("image_path") or "").strip()
 
             if not image_id:
-                raise FaceCloakError("Ablation manifest row contains empty image_id.")
+                raise UACloakError("Ablation manifest row contains empty image_id.")
             if modality not in {"face", "general"}:
-                raise FaceCloakError(
+                raise UACloakError(
                     f"Invalid modality '{modality}' in ablation manifest row {image_id}."
                 )
             if not image_path_raw:
-                raise FaceCloakError(
+                raise UACloakError(
                     f"Ablation manifest row {image_id} is missing image_path."
                 )
 
@@ -163,13 +163,13 @@ def load_ablation_manifest(
             )
 
     if not rows:
-        raise FaceCloakError("Ablation manifest is empty.")
+        raise UACloakError("Ablation manifest is empty.")
 
     if require_fixed_set:
         face_count = sum(1 for row in rows if row.modality == "face")
         general_count = sum(1 for row in rows if row.modality == "general")
         if len(rows) != 40 or face_count != 20 or general_count != 20:
-            raise FaceCloakError(
+            raise UACloakError(
                 "Fixed ablation set must contain exactly 40 rows: 20 face and 20 general. "
                 f"Found {len(rows)} rows ({face_count} face, {general_count} general)."
             )
@@ -179,7 +179,7 @@ def load_ablation_manifest(
 
 def _load_image(path: Path) -> Image.Image:
     if not path.exists():
-        raise FaceCloakError(f"Image not found: {path}")
+        raise UACloakError(f"Image not found: {path}")
     return Image.open(path).convert("RGB")
 
 
@@ -204,7 +204,7 @@ def _parse_float_list(raw: str) -> list[float]:
             continue
         values.append(float(token))
     if not values:
-        raise FaceCloakError(
+        raise UACloakError(
             "Expected at least one numeric value in comma-separated list."
         )
     return values
@@ -218,7 +218,7 @@ def _parse_int_list(raw: str) -> list[int]:
             continue
         values.append(int(token))
     if not values:
-        raise FaceCloakError(
+        raise UACloakError(
             "Expected at least one integer value in comma-separated list."
         )
     return values
@@ -278,7 +278,7 @@ def _update_delta(
         delta = delta.view_as(grad)
         delta = _project_l2(delta, l2_radius)
     else:
-        raise FaceCloakError(f"Unsupported norm type: {norm_type}")
+        raise UACloakError(f"Unsupported norm type: {norm_type}")
 
     delta = torch.clamp(original + delta, lower, upper) - original
 
@@ -409,7 +409,7 @@ def _attack_face_variant(
         elif loss_variant == "combined_clip_facenet":
             attack_term = -face_cos - clip_cos
         else:
-            raise FaceCloakError(f"Unknown face loss variant: {loss_variant}")
+            raise UACloakError(f"Unknown face loss variant: {loss_variant}")
 
         objective = attack_term - l2_lambda * delta.pow(2).mean()
         grad = torch.autograd.grad(
@@ -471,11 +471,11 @@ def _attack_general_with_clip(
         elif loss_variant == "clip_l2_only":
             attack_term = l2_term
         elif loss_variant == "facenet_cosine_only":
-            raise FaceCloakError(
+            raise UACloakError(
                 "facenet_cosine_only is not applicable to general-image ablation rows."
             )
         else:
-            raise FaceCloakError(f"Unknown general loss variant: {loss_variant}")
+            raise UACloakError(f"Unknown general loss variant: {loss_variant}")
 
         objective = attack_term - l2_lambda * delta.pow(2).mean()
         grad = torch.autograd.grad(
@@ -597,7 +597,7 @@ def _load_resnet(model_name: str) -> Any:
     if model_name == "resnet50":
         return resnet50(weights=ResNet50_Weights.DEFAULT).eval()
 
-    raise FaceCloakError(f"Unsupported surrogate model: {model_name}")
+    raise UACloakError(f"Unsupported surrogate model: {model_name}")
 
 
 def _load_convnext_large() -> Any:
@@ -801,7 +801,7 @@ def _plot_epsilon(rows: Sequence[SettingResult], output_path: Path) -> None:
     try:
         import matplotlib.pyplot as plt
     except Exception as exc:  # pragma: no cover - environment dependent
-        raise FaceCloakError(
+        raise UACloakError(
             "matplotlib is required to render ablation plots. Install it with `uv add matplotlib` "
             "or run `uv sync --group dev`."
         ) from exc
@@ -837,7 +837,7 @@ def _plot_steps(rows: Sequence[SettingResult], output_path: Path) -> None:
     try:
         import matplotlib.pyplot as plt
     except Exception as exc:  # pragma: no cover - environment dependent
-        raise FaceCloakError(
+        raise UACloakError(
             "matplotlib is required to render ablation plots. Install it with `uv add matplotlib` "
             "or run `uv sync --group dev`."
         ) from exc
@@ -882,7 +882,7 @@ def _plot_loss(rows: Sequence[LossVariantResult], output_path: Path) -> None:
     try:
         import matplotlib.pyplot as plt
     except Exception as exc:  # pragma: no cover - environment dependent
-        raise FaceCloakError(
+        raise UACloakError(
             "matplotlib is required to render ablation plots. Install it with `uv add matplotlib` "
             "or run `uv sync --group dev`."
         ) from exc
@@ -927,7 +927,7 @@ def _plot_norm(rows: Sequence[NormVariantResult], output_path: Path) -> None:
     try:
         import matplotlib.pyplot as plt
     except Exception as exc:  # pragma: no cover - environment dependent
-        raise FaceCloakError(
+        raise UACloakError(
             "matplotlib is required to render ablation plots. Install it with `uv add matplotlib` "
             "or run `uv sync --group dev`."
         ) from exc
@@ -976,7 +976,7 @@ def _plot_transfer_heatmap(
     try:
         import matplotlib.pyplot as plt
     except Exception as exc:  # pragma: no cover - environment dependent
-        raise FaceCloakError(
+        raise UACloakError(
             "matplotlib is required to render ablation plots. Install it with `uv add matplotlib` "
             "or run `uv sync --group dev`."
         ) from exc

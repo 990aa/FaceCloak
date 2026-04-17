@@ -1,6 +1,6 @@
 """Tests for environment diagnostics."""
 
-from facecloak.environment import collect_runtime_report, render_runtime_markdown
+from uacloak.environment import collect_runtime_report, render_runtime_markdown
 
 
 def test_collect_runtime_report_returns_expected_values() -> None:

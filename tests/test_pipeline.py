@@ -7,8 +7,8 @@ from PIL import Image
 import pytest
 import torch
 
-from facecloak.errors import FaceCloakError
-from facecloak.pipeline import (
+from uacloak.errors import UACloakError
+from uacloak.pipeline import (
     MAX_INPUT_DIMENSION,
     amplified_diff_image,
     classify_image_type,
@@ -94,7 +94,7 @@ def test_detect_primary_face_returns_probability_and_image() -> None:
 
 
 def test_detect_primary_face_raises_readable_error_when_no_face_found() -> None:
-    with pytest.raises(FaceCloakError, match="No face detected"):
+    with pytest.raises(UACloakError, match="No face detected"):
         detect_primary_face(
             Image.new("RGB", (64, 64), "white"), detector=MissingFaceDetector()
         )

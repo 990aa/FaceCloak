@@ -1,7 +1,7 @@
-"""User-facing exceptions for FaceCloak workflows."""
+"""User-facing exceptions for UACloak workflows."""
 
 from __future__ import annotations
 
 
-class FaceCloakError(RuntimeError):
+class UACloakError(RuntimeError):
     """A readable error that can be surfaced directly in the UI."""

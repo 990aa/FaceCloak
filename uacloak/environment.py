@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
 import platform
 
-from facecloak.project import TORCH_CACHE_DIR
+from uacloak.project import TORCH_CACHE_DIR
 
 
 @dataclass(frozen=True, slots=True)

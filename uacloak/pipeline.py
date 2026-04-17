@@ -10,8 +10,8 @@ from PIL import Image
 import torch
 import torch.nn.functional as F
 
-from facecloak.errors import FaceCloakError
-from facecloak.models import (
+from uacloak.errors import UACloakError
+from uacloak.models import (
     FACE_DETECTION_CONFIDENCE_THRESHOLD,
     get_clip_model,
     get_clip_processor,
@@ -147,7 +147,7 @@ def detect_primary_face(
     face_tensor, probability = detector(rgb_image, return_prob=True)
 
     if face_tensor is None:
-        raise FaceCloakError(
+        raise UACloakError(
             "No face detected in this image. Please upload a clear, well-lit photo "
             "where your face is visible and forward-facing."
         )
@@ -156,7 +156,7 @@ def detect_primary_face(
     h = face_tensor.shape[-2] if face_tensor.ndim == 3 else face_tensor.shape[-2]
     w = face_tensor.shape[-1] if face_tensor.ndim == 3 else face_tensor.shape[-1]
     if h < MIN_CROP_DIMENSION or w < MIN_CROP_DIMENSION:
-        raise FaceCloakError(
+        raise UACloakError(
             f"The detected face crop is only {w}×{h} pixels, which is too small for "
             "reliable recognition. Please upload a higher-resolution photo."
         )

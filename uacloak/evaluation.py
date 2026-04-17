@@ -16,14 +16,14 @@ from skimage.metrics import structural_similarity
 import torch
 import torch.nn.functional as F
 
-from facecloak.cloaking import (
+from uacloak.cloaking import (
     CloakHyperparameters,
     cloak_face_tensor,
     cloak_general_image,
 )
-from facecloak.errors import FaceCloakError
-from facecloak.models import configure_torch_cache, get_clip_model, get_clip_processor
-from facecloak.pipeline import (
+from uacloak.errors import UACloakError
+from uacloak.models import configure_torch_cache, get_clip_model, get_clip_processor
+from uacloak.pipeline import (
     cosine_similarity,
     detect_primary_face,
     ensure_rgb,
@@ -79,7 +79,7 @@ class ClipBackbone:
 
 def _load_image(path: Path) -> Image.Image:
     if not path.exists():
-        raise FaceCloakError(f"Image file not found: {path}")
+        raise UACloakError(f"Image file not found: {path}")
     return Image.open(path).convert("RGB")
 
 
@@ -104,7 +104,7 @@ def load_manifest(manifest_path: Path) -> list[BenchmarkSample]:
     """
 
     if not manifest_path.exists():
-        raise FaceCloakError(f"Manifest not found: {manifest_path}")
+        raise UACloakError(f"Manifest not found: {manifest_path}")
 
     with manifest_path.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -114,7 +114,7 @@ def load_manifest(manifest_path: Path) -> list[BenchmarkSample]:
         missing = required.difference(fieldnames)
         if missing:
             missing_cols = ", ".join(sorted(missing))
-            raise FaceCloakError(
+            raise UACloakError(
                 f"Manifest is missing required columns: {missing_cols}"
             )
 
@@ -127,14 +127,14 @@ def load_manifest(manifest_path: Path) -> list[BenchmarkSample]:
             pair_type = (row.get("pair_type") or "standard").strip().lower()
 
             if not image_id:
-                raise FaceCloakError("Manifest row contains an empty image_id.")
+                raise UACloakError("Manifest row contains an empty image_id.")
             if modality not in {"face", "general"}:
-                raise FaceCloakError(
+                raise UACloakError(
                     f"Manifest row {image_id} has invalid modality '{modality}'. "
                     "Use 'face' or 'general'."
                 )
             if not image_path_raw or not reference_path_raw:
-                raise FaceCloakError(
+                raise UACloakError(
                     f"Manifest row {image_id} must include image_path and reference_path."
                 )
 
@@ -151,7 +151,7 @@ def load_manifest(manifest_path: Path) -> list[BenchmarkSample]:
             )
 
     if not rows:
-        raise FaceCloakError("Manifest did not contain any benchmark rows.")
+        raise UACloakError("Manifest did not contain any benchmark rows.")
 
     return rows
 
@@ -206,7 +206,7 @@ def _load_clip_backbone(model_id: str) -> ClipBackbone:
     try:
         from transformers import CLIPModel, CLIPProcessor
     except Exception as exc:  # pragma: no cover - import environment dependent
-        raise FaceCloakError(
+        raise UACloakError(
             "transformers is required for CLIP benchmark evaluation. "
             "Install dependencies with `uv sync` or `pip install transformers`."
         ) from exc
@@ -258,7 +258,7 @@ class ArcFaceOracle:
         try:
             from deepface import DeepFace
         except Exception as exc:  # pragma: no cover - import environment dependent
-            raise FaceCloakError(
+            raise UACloakError(
                 "deepface is required for ArcFace oracle evaluation. "
                 "Install dependencies with `uv sync` or `pip install deepface tf-keras`."
             ) from exc
@@ -280,12 +280,12 @@ class ArcFaceOracle:
         )
         embedding_data = payload.get("embedding") if isinstance(payload, dict) else None
         if embedding_data is None:
-            raise FaceCloakError("ArcFace oracle did not return an embedding.")
+            raise UACloakError("ArcFace oracle did not return an embedding.")
 
         embedding = np.asarray(embedding_data, dtype=np.float32).reshape(-1)
         norm = np.linalg.norm(embedding)
         if norm == 0.0:
-            raise FaceCloakError("ArcFace oracle produced a zero-length embedding.")
+            raise UACloakError("ArcFace oracle produced a zero-length embedding.")
 
         normalized = embedding / norm
         self._embedding_cache[key] = normalized
@@ -450,7 +450,7 @@ def run_benchmark(
     """Evaluate manifest samples against surrogate and oracle models."""
 
     if not samples:
-        raise FaceCloakError("No samples provided to run_benchmark.")
+        raise UACloakError("No samples provided to run_benchmark.")
 
     face_params = CloakHyperparameters(
         epsilon=epsilon,
@@ -490,7 +490,7 @@ def run_benchmark(
         try:
             if sample.modality == "face":
                 if arcface_oracle is None:
-                    raise FaceCloakError("ArcFace oracle was not initialized.")
+                    raise UACloakError("ArcFace oracle was not initialized.")
                 row = _evaluate_face_sample(
                     sample,
                     attack_parameters=face_params,
@@ -499,7 +499,7 @@ def run_benchmark(
                 )
             else:
                 if surrogate_clip is None or oracle_clip is None:
-                    raise FaceCloakError(
+                    raise UACloakError(
                         "General CLIP benchmark models were not initialized."
                     )
                 row = _evaluate_general_sample(
@@ -693,7 +693,7 @@ def write_summary_markdown(summary: dict[str, float | int], output_path: Path) -
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Run FaceCloak black-box transferability benchmark against ArcFace "
+            "Run UACloak black-box transferability benchmark against ArcFace "
             "(faces) and CLIP ViT-L/14 (general images)."
         )
     )

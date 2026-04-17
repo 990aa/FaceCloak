@@ -18,19 +18,19 @@ from skimage.metrics import peak_signal_noise_ratio
 import torch
 import torch.nn.functional as F
 
-from facecloak.cloaking import (
+from uacloak.cloaking import (
     CloakHyperparameters,
     cloak_face_tensor,
     cloak_general_image,
 )
-from facecloak.errors import FaceCloakError
-from facecloak.evaluation import (
+from uacloak.errors import UACloakError
+from uacloak.evaluation import (
     ArcFaceOracle,
     compute_ssim_score,
     load_oracle_clip_backbone,
 )
-from facecloak.models import get_clip_model
-from facecloak.pipeline import (
+from uacloak.models import get_clip_model
+from uacloak.pipeline import (
     detect_primary_face,
     ensure_rgb,
     extract_clip_embedding_numpy,
@@ -187,7 +187,7 @@ def load_benchmark_manifest(manifest_path: Path) -> list[BenchmarkSample]:
     """
 
     if not manifest_path.exists():
-        raise FaceCloakError(f"Benchmark manifest not found: {manifest_path}")
+        raise UACloakError(f"Benchmark manifest not found: {manifest_path}")
 
     with manifest_path.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -196,7 +196,7 @@ def load_benchmark_manifest(manifest_path: Path) -> list[BenchmarkSample]:
         required = {"image_id", "modality", "image_path", "reference_path"}
         missing = required.difference(fieldnames)
         if missing:
-            raise FaceCloakError(
+            raise UACloakError(
                 f"Benchmark manifest is missing required columns: {', '.join(sorted(missing))}"
             )
 
@@ -209,13 +209,13 @@ def load_benchmark_manifest(manifest_path: Path) -> list[BenchmarkSample]:
             category = (row.get("category") or "").strip().lower()
 
             if not image_id:
-                raise FaceCloakError("Benchmark manifest row has empty image_id.")
+                raise UACloakError("Benchmark manifest row has empty image_id.")
             if modality not in {"face", "general"}:
-                raise FaceCloakError(
+                raise UACloakError(
                     f"Row {image_id} has invalid modality '{modality}'. Use face or general."
                 )
             if not image_path_raw or not reference_path_raw:
-                raise FaceCloakError(
+                raise UACloakError(
                     f"Row {image_id} must provide both image_path and reference_path."
                 )
 
@@ -223,7 +223,7 @@ def load_benchmark_manifest(manifest_path: Path) -> list[BenchmarkSample]:
                 category = category or "face"
             else:
                 if category not in {"scene", "product", "document"}:
-                    raise FaceCloakError(
+                    raise UACloakError(
                         f"Row {image_id} is general modality and must use category in "
                         "{scene, product, document}."
                     )
@@ -241,14 +241,14 @@ def load_benchmark_manifest(manifest_path: Path) -> list[BenchmarkSample]:
             )
 
     if not samples:
-        raise FaceCloakError("Benchmark manifest is empty.")
+        raise UACloakError("Benchmark manifest is empty.")
 
     return samples
 
 
 def _load_image(path: Path) -> Image.Image:
     if not path.exists():
-        raise FaceCloakError(f"Image not found: {path}")
+        raise UACloakError(f"Image not found: {path}")
     return Image.open(path).convert("RGB")
 
 
@@ -609,7 +609,7 @@ def run_phase14_benchmark(
     """Run Phase 14 benchmark suite with fixed default attack settings."""
 
     if not samples:
-        raise FaceCloakError("No benchmark samples were provided.")
+        raise UACloakError("No benchmark samples were provided.")
 
     clip_surrogate_model = get_clip_model()
     clip_oracle = load_oracle_clip_backbone()

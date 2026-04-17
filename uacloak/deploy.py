@@ -8,8 +8,8 @@ from pathlib import Path
 
 from huggingface_hub import HfApi, SpaceHardware
 
-from facecloak.errors import FaceCloakError
-from facecloak.project import (
+from uacloak.errors import UACloakError
+from uacloak.project import (
     PROJECT_ROOT,
     PROJECT_SLUG,
     SPACE_UPLOAD_ALLOW_PATTERNS,
@@ -56,7 +56,7 @@ def resolve_hf_token(env_path: Path | None = None) -> str:
     if token:
         return token
 
-    raise FaceCloakError(
+    raise UACloakError(
         f"{HF_TOKEN_ENV_VAR} was not found. Add it to the environment or to a local .env file."
     )
 
@@ -65,7 +65,7 @@ def default_space_repo_id(api: HfApi, token: str) -> str:
     whoami = api.whoami(token=token, cache=False)
     username = whoami.get("name")
     if not username:
-        raise FaceCloakError(
+        raise UACloakError(
             "Could not determine the Hugging Face username from the provided token."
         )
     return f"{username}/{PROJECT_SLUG}"
@@ -97,7 +97,7 @@ def create_or_update_space(
         folder_path=folder_path,
         token=token,
         allow_patterns=list(SPACE_UPLOAD_ALLOW_PATTERNS),
-        commit_message="Deploy FaceCloak",
+        commit_message="Deploy UACloak",
     )
     runtime = api.get_space_runtime(repo_id, token=token)
 

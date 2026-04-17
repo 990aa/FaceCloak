@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from facecloak.evaluation import (
+from uacloak.evaluation import (
     BenchmarkMetrics,
     compute_ssim_score,
     load_manifest,

@@ -11,8 +11,8 @@ from PIL import Image
 import torch
 import torch.nn.functional as F
 
-from facecloak.models import CLIP_IMAGE_SIZE, get_clip_model, get_embedding_model
-from facecloak.pipeline import (
+from uacloak.models import CLIP_IMAGE_SIZE, get_clip_model, get_embedding_model
+from uacloak.pipeline import (
     DISPLAY_MAX,
     DISPLAY_MIN,
     _prepare_face_batch,

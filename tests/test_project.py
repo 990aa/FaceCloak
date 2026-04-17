@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from facecloak.project import PHASE_LABEL, requirements_lines
+from uacloak.project import PHASE_LABEL, requirements_lines
 
 
 def test_requirements_file_matches_pinned_runtime_dependencies() -> None:

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-PROJECT_NAME = "FaceCloak"
-PROJECT_SLUG = "facecloak"
+PROJECT_NAME = "UACloak"
+PROJECT_SLUG = "uacloak"
 PROJECT_TAGLINE = "Adversarial Pixel Poisoning for Biometric Privacy Preservation"
-PHASE_LABEL = "FaceCloak"
+PHASE_LABEL = "UACloak"
 PHASE_STATUS = "Ready"
 PHASE_SUMMARY = (
     "Face/general routing, dual-backbone similarity (FaceNet + CLIP), "
@@ -38,7 +38,7 @@ SPACE_UPLOAD_ALLOW_PATTERNS: tuple[str, ...] = (
     "requirements.txt",
     "pyproject.toml",
     "uv.lock",
-    "facecloak/**",
+    "uacloak/**",
     "benchmarks/**",
     "scripts/**",
     "tests/**",

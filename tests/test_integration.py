@@ -7,8 +7,8 @@ from pathlib import Path
 from PIL import Image
 import pytest
 
-from facecloak.cloaking import CloakHyperparameters, cloak_face_tensor
-from facecloak.pipeline import (
+from uacloak.cloaking import CloakHyperparameters, cloak_face_tensor
+from uacloak.pipeline import (
     cosine_similarity,
     detect_primary_face,
     extract_embedding_numpy,

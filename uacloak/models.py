@@ -9,7 +9,7 @@ from typing import Any
 import torch
 from facenet_pytorch import InceptionResnetV1, MTCNN
 
-from facecloak.project import TORCH_CACHE_DIR
+from uacloak.project import TORCH_CACHE_DIR
 
 # Optimize PyTorch CPU Threading (Step 40)
 torch.set_num_threads(4)
