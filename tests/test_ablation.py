@@ -21,9 +21,7 @@ def test_load_ablation_manifest_parses_rows(tmp_path: Path) -> None:
 
     manifest = tmp_path / "ablation.csv"
     manifest.write_text(
-        "image_id,modality,image_path\n"
-        "a,face,sample.png\n"
-        "b,general,sample.png\n",
+        "image_id,modality,image_path\na,face,sample.png\nb,general,sample.png\n",
         encoding="utf-8",
     )
 
@@ -41,8 +39,7 @@ def test_load_ablation_manifest_enforces_fixed_set_by_default(tmp_path: Path) ->
 
     manifest = tmp_path / "ablation.csv"
     manifest.write_text(
-        "image_id,modality,image_path\n"
-        "a,face,sample.png\n",
+        "image_id,modality,image_path\na,face,sample.png\n",
         encoding="utf-8",
     )
 

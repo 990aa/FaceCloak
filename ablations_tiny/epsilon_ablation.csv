@@ -1,0 +1,2 @@
+variable,value,mrs_face,mrs_general,mean_ssim,runtime_seconds
+epsilon,0.01,0.983759,0.995282,0.995869,46.407510

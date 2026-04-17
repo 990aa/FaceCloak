@@ -16,7 +16,11 @@ from skimage.metrics import structural_similarity
 import torch
 import torch.nn.functional as F
 
-from facecloak.cloaking import CloakHyperparameters, cloak_face_tensor, cloak_general_image
+from facecloak.cloaking import (
+    CloakHyperparameters,
+    cloak_face_tensor,
+    cloak_general_image,
+)
 from facecloak.errors import FaceCloakError
 from facecloak.models import configure_torch_cache, get_clip_model, get_clip_processor
 from facecloak.pipeline import (
@@ -139,7 +143,9 @@ def load_manifest(manifest_path: Path) -> list[BenchmarkSample]:
                     image_id=image_id,
                     modality=modality,
                     image_path=_resolve_manifest_path(manifest_path, image_path_raw),
-                    reference_path=_resolve_manifest_path(manifest_path, reference_path_raw),
+                    reference_path=_resolve_manifest_path(
+                        manifest_path, reference_path_raw
+                    ),
                     pair_type=pair_type or "standard",
                 )
             )
@@ -183,7 +189,9 @@ def _clip_similarity(
     processor: Any,
 ) -> float:
     with torch.inference_mode():
-        inputs = processor(images=[ensure_rgb(image_a), ensure_rgb(image_b)], return_tensors="pt")
+        inputs = processor(
+            images=[ensure_rgb(image_a), ensure_rgb(image_b)], return_tensors="pt"
+        )
         pixel_values = inputs["pixel_values"].to(_clip_model_device(model))
         features = model.get_image_features(pixel_values=pixel_values)
         features = F.normalize(features, p=2, dim=1)
@@ -267,7 +275,9 @@ class ArcFaceOracle:
             normalization="base",
         )
 
-        payload = representation[0] if isinstance(representation, list) else representation
+        payload = (
+            representation[0] if isinstance(representation, list) else representation
+        )
         embedding_data = payload.get("embedding") if isinstance(payload, dict) else None
         if embedding_data is None:
             raise FaceCloakError("ArcFace oracle did not return an embedding.")
@@ -281,7 +291,9 @@ class ArcFaceOracle:
         self._embedding_cache[key] = normalized
         return normalized
 
-    def similarity(self, reference_image: Image.Image, candidate_image: Image.Image) -> float:
+    def similarity(
+        self, reference_image: Image.Image, candidate_image: Image.Image
+    ) -> float:
         reference_embedding = self._embedding(reference_image)
         candidate_embedding = self._embedding(candidate_image)
         return cosine_similarity(reference_embedding, candidate_embedding)
@@ -314,7 +326,9 @@ def _evaluate_face_sample(
     surrogate_cloaked_score = cosine_similarity(surrogate_reference, surrogate_cloaked)
 
     oracle_clean = oracle.similarity(reference_face.image, query_face.image)
-    oracle_cloaked = oracle.similarity(reference_face.image, cloak_result.cloaked_face_image)
+    oracle_cloaked = oracle.similarity(
+        reference_face.image, cloak_result.cloaked_face_image
+    )
 
     ssim_score = compute_ssim_score(query_face.image, cloak_result.cloaked_face_image)
 
@@ -332,7 +346,8 @@ def _evaluate_face_sample(
         ssim_pass=ssim_score >= SSIM_IMPERCEPTIBLE_THRESHOLD,
         oracle_transfer_success=oracle_cloaked < oracle_clean,
         near_duplicate_clean_pass=(
-            sample.pair_type == "near_duplicate" and oracle_clean >= near_duplicate_threshold
+            sample.pair_type == "near_duplicate"
+            and oracle_clean >= near_duplicate_threshold
         ),
     )
 
@@ -396,7 +411,8 @@ def _evaluate_general_sample(
         ssim_pass=ssim_score >= SSIM_IMPERCEPTIBLE_THRESHOLD,
         oracle_transfer_success=oracle_cloaked < oracle_clean,
         near_duplicate_clean_pass=(
-            sample.pair_type == "near_duplicate" and oracle_clean >= near_duplicate_threshold
+            sample.pair_type == "near_duplicate"
+            and oracle_clean >= near_duplicate_threshold
         ),
     )
 
@@ -460,7 +476,9 @@ def run_benchmark(
     arcface_oracle = ArcFaceOracle() if has_face else None
     surrogate_clip = load_surrogate_clip_backbone() if has_general else None
     oracle_clip = (
-        load_oracle_clip_backbone(model_id=oracle_clip_model_id) if has_general else None
+        load_oracle_clip_backbone(model_id=oracle_clip_model_id)
+        if has_general
+        else None
     )
 
     metrics: list[BenchmarkMetrics] = []
@@ -481,7 +499,9 @@ def run_benchmark(
                 )
             else:
                 if surrogate_clip is None or oracle_clip is None:
-                    raise FaceCloakError("General CLIP benchmark models were not initialized.")
+                    raise FaceCloakError(
+                        "General CLIP benchmark models were not initialized."
+                    )
                 row = _evaluate_general_sample(
                     sample,
                     attack_parameters=general_params,
@@ -513,8 +533,12 @@ def _metric_to_csv_row(metric: BenchmarkMetrics) -> dict[str, str]:
         "surrogate_confidence_drop": _fmt(metric.surrogate_confidence_drop),
         "oracle_confidence_drop": _fmt(metric.oracle_confidence_drop),
         "ssim_pass": "true" if metric.ssim_pass else "false",
-        "oracle_transfer_success": "true" if metric.oracle_transfer_success else "false",
-        "near_duplicate_clean_pass": "true" if metric.near_duplicate_clean_pass else "false",
+        "oracle_transfer_success": "true"
+        if metric.oracle_transfer_success
+        else "false",
+        "near_duplicate_clean_pass": "true"
+        if metric.near_duplicate_clean_pass
+        else "false",
         "error": metric.error or "",
     }
 
@@ -596,12 +620,19 @@ def summarize_metrics(
     summary["oracle_transfer_success_rate"] = float(
         np.mean([1.0 if row.oracle_transfer_success else 0.0 for row in valid])
     )
-    summary["ssim_pass_rate"] = float(np.mean([1.0 if row.ssim_pass else 0.0 for row in valid]))
+    summary["ssim_pass_rate"] = float(
+        np.mean([1.0 if row.ssim_pass else 0.0 for row in valid])
+    )
 
     near_duplicate_rows = [row for row in valid if row.pair_type == "near_duplicate"]
     if near_duplicate_rows:
         summary["near_duplicate_clean_pass_rate"] = float(
-            np.mean([1.0 if row.near_duplicate_clean_pass else 0.0 for row in near_duplicate_rows])
+            np.mean(
+                [
+                    1.0 if row.near_duplicate_clean_pass else 0.0
+                    for row in near_duplicate_rows
+                ]
+            )
         )
     else:
         summary["near_duplicate_clean_pass_rate"] = math.nan

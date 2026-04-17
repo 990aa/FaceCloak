@@ -204,7 +204,9 @@ def _parse_float_list(raw: str) -> list[float]:
             continue
         values.append(float(token))
     if not values:
-        raise FaceCloakError("Expected at least one numeric value in comma-separated list.")
+        raise FaceCloakError(
+            "Expected at least one numeric value in comma-separated list."
+        )
     return values
 
 
@@ -216,7 +218,9 @@ def _parse_int_list(raw: str) -> list[int]:
             continue
         values.append(int(token))
     if not values:
-        raise FaceCloakError("Expected at least one integer value in comma-separated list.")
+        raise FaceCloakError(
+            "Expected at least one integer value in comma-separated list."
+        )
     return values
 
 
@@ -239,7 +243,7 @@ def _module_device(module: Any) -> torch.device:
 
 
 def _project_l2(delta: torch.Tensor, radius: float) -> torch.Tensor:
-    flat = delta.view(delta.shape[0], -1)
+    flat = delta.reshape(delta.shape[0], -1)
     norms = torch.linalg.norm(flat, dim=1, keepdim=True)
     scales = torch.clamp(radius / (norms + 1e-12), max=1.0)
     projected = flat * scales
@@ -267,10 +271,10 @@ def _update_delta(
         delta = delta + alpha * grad.sign()
         delta = torch.clamp(delta, -epsilon, epsilon)
     elif norm_type == "l2":
-        flat_grad = grad.view(grad.shape[0], -1)
+        flat_grad = grad.reshape(grad.shape[0], -1)
         grad_norm = torch.linalg.norm(flat_grad, dim=1, keepdim=True)
         direction = flat_grad / (grad_norm + 1e-12)
-        delta = delta.view(delta.shape[0], -1) + alpha * direction
+        delta = delta.reshape(delta.shape[0], -1) + alpha * direction
         delta = delta.view_as(grad)
         delta = _project_l2(delta, l2_radius)
     else:
@@ -289,13 +293,17 @@ def _face_batch_to_unit(face_batch: torch.Tensor) -> torch.Tensor:
     return torch.clamp((face_batch + 1.0) / 2.0, 0.0, 1.0)
 
 
-def _clip_embedding_from_unit_batch(unit_batch: torch.Tensor, clip_model: Any) -> torch.Tensor:
+def _clip_embedding_from_unit_batch(
+    unit_batch: torch.Tensor, clip_model: Any
+) -> torch.Tensor:
     normalized = normalize_clip_pixel_values(unit_batch)
     features = clip_model.get_image_features(pixel_values=normalized)
     return F.normalize(features, p=2, dim=1)
 
 
-def _resnet_feature_embedding(model: Any, normalized_batch: torch.Tensor) -> torch.Tensor:
+def _resnet_feature_embedding(
+    model: Any, normalized_batch: torch.Tensor
+) -> torch.Tensor:
     x = model.conv1(normalized_batch)
     x = model.bn1(x)
     x = model.relu(x)
@@ -310,7 +318,9 @@ def _resnet_feature_embedding(model: Any, normalized_batch: torch.Tensor) -> tor
     return F.normalize(x, p=2, dim=1)
 
 
-def _convnext_feature_embedding(model: Any, normalized_batch: torch.Tensor) -> torch.Tensor:
+def _convnext_feature_embedding(
+    model: Any, normalized_batch: torch.Tensor
+) -> torch.Tensor:
     x = model.features(normalized_batch)
     x = model.avgpool(x)
     x = torch.flatten(x, 1)
@@ -318,7 +328,9 @@ def _convnext_feature_embedding(model: Any, normalized_batch: torch.Tensor) -> t
 
 
 def _imagenet_normalize(unit_batch: torch.Tensor) -> torch.Tensor:
-    mean = torch.tensor((0.485, 0.456, 0.406), device=unit_batch.device).view(1, 3, 1, 1)
+    mean = torch.tensor((0.485, 0.456, 0.406), device=unit_batch.device).view(
+        1, 3, 1, 1
+    )
     std = torch.tensor((0.229, 0.224, 0.225), device=unit_batch.device).view(1, 3, 1, 1)
     return (unit_batch - mean) / std
 
@@ -331,7 +343,9 @@ def _clip_similarity(
     processor: Any,
 ) -> float:
     with torch.inference_mode():
-        inputs = processor(images=[ensure_rgb(image_a), ensure_rgb(image_b)], return_tensors="pt")
+        inputs = processor(
+            images=[ensure_rgb(image_a), ensure_rgb(image_b)], return_tensors="pt"
+        )
         pixel_values = inputs["pixel_values"].to(_module_device(model))
         features = model.get_image_features(pixel_values=pixel_values)
         features = F.normalize(features, p=2, dim=1)
@@ -361,7 +375,9 @@ def _attack_face_variant(
         mode="bilinear",
         align_corners=False,
     ).to(clip_device)
-    original_clip_embed = _clip_embedding_from_unit_batch(original_clip_batch, clip_model).detach()
+    original_clip_embed = _clip_embedding_from_unit_batch(
+        original_clip_batch, clip_model
+    ).detach()
 
     alpha = alpha_fraction * epsilon
     delta = torch.zeros_like(original)
@@ -396,7 +412,9 @@ def _attack_face_variant(
             raise FaceCloakError(f"Unknown face loss variant: {loss_variant}")
 
         objective = attack_term - l2_lambda * delta.pow(2).mean()
-        grad = torch.autograd.grad(objective, delta, retain_graph=False, create_graph=False)[0]
+        grad = torch.autograd.grad(
+            objective, delta, retain_graph=False, create_graph=False
+        )[0]
 
         with torch.no_grad():
             delta = _update_delta(
@@ -429,7 +447,9 @@ def _attack_general_with_clip(
     clip_device = _module_device(clip_model)
     original_size = ensure_rgb(image).size
 
-    original = _unit_batch_from_pil(image, size=(CLIP_IMAGE_SIZE, CLIP_IMAGE_SIZE)).to(clip_device)
+    original = _unit_batch_from_pil(image, size=(CLIP_IMAGE_SIZE, CLIP_IMAGE_SIZE)).to(
+        clip_device
+    )
     original_embed = _clip_embedding_from_unit_batch(original, clip_model).detach()
 
     alpha = alpha_fraction * epsilon
@@ -441,7 +461,9 @@ def _attack_general_with_clip(
         candidate = torch.clamp(original + delta, 0.0, 1.0)
         candidate_embed = _clip_embedding_from_unit_batch(candidate, clip_model)
 
-        cosine_term = -F.cosine_similarity(original_embed, candidate_embed, dim=1).mean()
+        cosine_term = -F.cosine_similarity(
+            original_embed, candidate_embed, dim=1
+        ).mean()
         l2_term = (candidate_embed - original_embed).pow(2).mean()
 
         if loss_variant in {"clip_cosine_only", "combined_clip_facenet"}:
@@ -456,7 +478,9 @@ def _attack_general_with_clip(
             raise FaceCloakError(f"Unknown general loss variant: {loss_variant}")
 
         objective = attack_term - l2_lambda * delta.pow(2).mean()
-        grad = torch.autograd.grad(objective, delta, retain_graph=False, create_graph=False)[0]
+        grad = torch.autograd.grad(
+            objective, delta, retain_graph=False, create_graph=False
+        )[0]
 
         with torch.no_grad():
             delta = _update_delta(
@@ -506,7 +530,9 @@ def _attack_general_with_resnet(
     original_size = ensure_rgb(image).size
 
     original = _unit_batch_from_pil(image, size=(224, 224)).to(device)
-    original_embed = _resnet_feature_embedding(model, _imagenet_normalize(original)).detach()
+    original_embed = _resnet_feature_embedding(
+        model, _imagenet_normalize(original)
+    ).detach()
 
     alpha = alpha_fraction * epsilon
     delta = torch.zeros_like(original)
@@ -515,10 +541,16 @@ def _attack_general_with_resnet(
     for _ in range(num_steps):
         delta = delta.detach().requires_grad_(True)
         candidate = torch.clamp(original + delta, 0.0, 1.0)
-        candidate_embed = _resnet_feature_embedding(model, _imagenet_normalize(candidate))
-        attack_term = -F.cosine_similarity(original_embed, candidate_embed, dim=1).mean()
+        candidate_embed = _resnet_feature_embedding(
+            model, _imagenet_normalize(candidate)
+        )
+        attack_term = -F.cosine_similarity(
+            original_embed, candidate_embed, dim=1
+        ).mean()
         objective = attack_term - l2_lambda * delta.pow(2).mean()
-        grad = torch.autograd.grad(objective, delta, retain_graph=False, create_graph=False)[0]
+        grad = torch.autograd.grad(
+            objective, delta, retain_graph=False, create_graph=False
+        )[0]
 
         with torch.no_grad():
             delta = _update_delta(
@@ -553,7 +585,12 @@ def _attack_general_with_resnet(
 
 def _load_resnet(model_name: str) -> Any:
     configure_torch_cache()
-    from torchvision.models import ResNet18_Weights, ResNet50_Weights, resnet18, resnet50
+    from torchvision.models import (
+        ResNet18_Weights,
+        ResNet50_Weights,
+        resnet18,
+        resnet50,
+    )
 
     if model_name == "resnet18":
         return resnet18(weights=ResNet18_Weights.DEFAULT).eval()
@@ -570,7 +607,9 @@ def _load_convnext_large() -> Any:
     return convnext_large(weights=ConvNeXt_Large_Weights.DEFAULT).eval()
 
 
-def _convnext_similarity(model: Any, image_a: Image.Image, image_b: Image.Image) -> float:
+def _convnext_similarity(
+    model: Any, image_a: Image.Image, image_b: Image.Image
+) -> float:
     device = _module_device(model)
     a = _unit_batch_from_pil(image_a, size=(224, 224)).to(device)
     b = _unit_batch_from_pil(image_b, size=(224, 224)).to(device)
@@ -643,7 +682,11 @@ def _evaluate_setting(
         general_scores.append(score)
         ssim_scores.append(compute_ssim_score(image, cloaked))
 
-    return _mean_or_nan(face_scores), _mean_or_nan(general_scores), _mean_or_nan(ssim_scores)
+    return (
+        _mean_or_nan(face_scores),
+        _mean_or_nan(general_scores),
+        _mean_or_nan(ssim_scores),
+    )
 
 
 def _write_setting_csv(rows: Sequence[SettingResult], output_path: Path) -> None:
@@ -695,7 +738,9 @@ def _write_loss_csv(rows: Sequence[LossVariantResult], output_path: Path) -> Non
                     "variant": row.variant,
                     "mrs_face_arcface": _format_float(row.mrs_face_arcface),
                     "mrs_face_clip_oracle": _format_float(row.mrs_face_clip_oracle),
-                    "mrs_general_clip_oracle": _format_float(row.mrs_general_clip_oracle),
+                    "mrs_general_clip_oracle": _format_float(
+                        row.mrs_general_clip_oracle
+                    ),
                     "mean_ssim": _format_float(row.mean_ssim),
                     "runtime_seconds": _format_float(row.runtime_seconds),
                 }
@@ -732,7 +777,9 @@ def _write_norm_csv(rows: Sequence[NormVariantResult], output_path: Path) -> Non
             )
 
 
-def _write_transfer_csv(rows: Sequence[TransferMatrixResult], output_path: Path) -> None:
+def _write_transfer_csv(
+    rows: Sequence[TransferMatrixResult], output_path: Path
+) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
@@ -798,7 +845,13 @@ def _plot_steps(rows: Sequence[SettingResult], output_path: Path) -> None:
     steps = [int(row.value) for row in rows]
     runtime = [row.runtime_seconds for row in rows]
     combined_mrs = [
-        _mean_or_nan([value for value in (row.mrs_face, row.mrs_general) if not math.isnan(value)])
+        _mean_or_nan(
+            [
+                value
+                for value in (row.mrs_face, row.mrs_general)
+                if not math.isnan(value)
+            ]
+        )
         for row in rows
     ]
 
@@ -806,7 +859,9 @@ def _plot_steps(rows: Sequence[SettingResult], output_path: Path) -> None:
     ax2 = ax1.twinx()
 
     ax1.plot(steps, combined_mrs, marker="o", label="Combined MRS")
-    ax2.plot(steps, runtime, marker="s", linestyle="--", color="#d62728", label="Runtime (s)")
+    ax2.plot(
+        steps, runtime, marker="s", linestyle="--", color="#d62728", label="Runtime (s)"
+    )
 
     ax1.set_xlabel("PGD Steps")
     ax1.set_ylabel("Combined MRS")
@@ -837,9 +892,24 @@ def _plot_loss(rows: Sequence[LossVariantResult], output_path: Path) -> None:
     width = 0.25
 
     fig, ax = plt.subplots(figsize=(10.0, 5.5))
-    ax.bar(x - width, [row.mrs_face_arcface for row in rows], width=width, label="Face Oracle (ArcFace)")
-    ax.bar(x, [row.mrs_face_clip_oracle for row in rows], width=width, label="Face Oracle (CLIP-L/14)")
-    ax.bar(x + width, [row.mrs_general_clip_oracle for row in rows], width=width, label="General Oracle (CLIP-L/14)")
+    ax.bar(
+        x - width,
+        [row.mrs_face_arcface for row in rows],
+        width=width,
+        label="Face Oracle (ArcFace)",
+    )
+    ax.bar(
+        x,
+        [row.mrs_face_clip_oracle for row in rows],
+        width=width,
+        label="Face Oracle (CLIP-L/14)",
+    )
+    ax.bar(
+        x + width,
+        [row.mrs_general_clip_oracle for row in rows],
+        width=width,
+        label="General Oracle (CLIP-L/14)",
+    )
 
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=20, ha="right")
@@ -870,7 +940,13 @@ def _plot_norm(rows: Sequence[NormVariantResult], output_path: Path) -> None:
     ax2 = ax1.twinx()
 
     combined_mrs = [
-        _mean_or_nan([value for value in (row.mrs_face, row.mrs_general) if not math.isnan(value)])
+        _mean_or_nan(
+            [
+                value
+                for value in (row.mrs_face, row.mrs_general)
+                if not math.isnan(value)
+            ]
+        )
         for row in rows
     ]
     ssim_values = [row.mean_ssim for row in rows]
@@ -894,7 +970,9 @@ def _plot_norm(rows: Sequence[NormVariantResult], output_path: Path) -> None:
     plt.close(fig)
 
 
-def _plot_transfer_heatmap(rows: Sequence[TransferMatrixResult], output_path: Path) -> None:
+def _plot_transfer_heatmap(
+    rows: Sequence[TransferMatrixResult], output_path: Path
+) -> None:
     try:
         import matplotlib.pyplot as plt
     except Exception as exc:  # pragma: no cover - environment dependent
@@ -957,13 +1035,21 @@ def _setting_rows_to_markdown(rows: Sequence[SettingResult]) -> str:
     return _markdown_table(headers, table_rows)
 
 
-def _choose_best_setting(rows: Sequence[SettingResult], ssim_threshold: float) -> SettingResult | None:
-    eligible = [row for row in rows if (not math.isnan(row.mean_ssim) and row.mean_ssim >= ssim_threshold)]
+def _choose_best_setting(
+    rows: Sequence[SettingResult], ssim_threshold: float
+) -> SettingResult | None:
+    eligible = [
+        row
+        for row in rows
+        if (not math.isnan(row.mean_ssim) and row.mean_ssim >= ssim_threshold)
+    ]
     if not eligible:
         return None
 
     def score(row: SettingResult) -> float:
-        values = [value for value in (row.mrs_face, row.mrs_general) if not math.isnan(value)]
+        values = [
+            value for value in (row.mrs_face, row.mrs_general) if not math.isnan(value)
+        ]
         return _mean_or_nan(values)
 
     return min(eligible, key=score)
@@ -1015,9 +1101,7 @@ def _write_report(
     lines.append(_setting_rows_to_markdown(step_rows))
     lines.append("")
     if step_best is not None:
-        lines.append(
-            f"Best step count under SSIM constraint was {step_best.value}."
-        )
+        lines.append(f"Best step count under SSIM constraint was {step_best.value}.")
         lines.append(
             "Step growth beyond the mid-range shows diminishing MRS gains relative to runtime increase, supporting 100-step default behavior on CPU."
         )
@@ -1040,9 +1124,15 @@ def _write_report(
         loss_table_rows.append(
             [
                 row.variant,
-                "n/a" if math.isnan(row.mrs_face_arcface) else f"{row.mrs_face_arcface:.4f}",
-                "n/a" if math.isnan(row.mrs_face_clip_oracle) else f"{row.mrs_face_clip_oracle:.4f}",
-                "n/a" if math.isnan(row.mrs_general_clip_oracle) else f"{row.mrs_general_clip_oracle:.4f}",
+                "n/a"
+                if math.isnan(row.mrs_face_arcface)
+                else f"{row.mrs_face_arcface:.4f}",
+                "n/a"
+                if math.isnan(row.mrs_face_clip_oracle)
+                else f"{row.mrs_face_clip_oracle:.4f}",
+                "n/a"
+                if math.isnan(row.mrs_general_clip_oracle)
+                else f"{row.mrs_general_clip_oracle:.4f}",
                 "n/a" if math.isnan(row.mean_ssim) else f"{row.mean_ssim:.4f}",
                 f"{row.runtime_seconds:.2f}",
             ]
@@ -1091,7 +1181,11 @@ def _write_report(
     transfer_table_rows: list[list[str]] = []
     for row in transfer_rows:
         transfer_table_rows.append(
-            [row.surrogate, row.oracle, "n/a" if math.isnan(row.mrs_general) else f"{row.mrs_general:.4f}"]
+            [
+                row.surrogate,
+                row.oracle,
+                "n/a" if math.isnan(row.mrs_general) else f"{row.mrs_general:.4f}",
+            ]
         )
     lines.append(_markdown_table(transfer_headers, transfer_table_rows))
     lines.append("")
@@ -1226,7 +1320,9 @@ def run_ablation_studies(
                     l2_lambda=l2_lambda,
                     norm_type="linf",
                 )
-                face_arcface_scores.append(arcface_oracle.similarity(detected.image, cloaked))
+                face_arcface_scores.append(
+                    arcface_oracle.similarity(detected.image, cloaked)
+                )
                 face_clip_scores.append(
                     _clip_similarity(
                         detected.image,
@@ -1324,7 +1420,9 @@ def run_ablation_studies(
         }
 
         for surrogate_name in DEFAULT_SURROGATES:
-            scores_by_oracle: dict[str, list[float]] = {name: [] for name in oracle_names}
+            scores_by_oracle: dict[str, list[float]] = {
+                name: [] for name in oracle_names
+            }
 
             for sample in general_samples:
                 image = cache.images[sample.image_id]
@@ -1360,7 +1458,9 @@ def run_ablation_studies(
                 scores_by_oracle["clip_vit_l14"].append(clip_score)
 
                 if convnext_oracle_model is not None:
-                    conv_score = _convnext_similarity(convnext_oracle_model, image, cloaked)
+                    conv_score = _convnext_similarity(
+                        convnext_oracle_model, image, cloaked
+                    )
                     scores_by_oracle["convnext_large"].append(conv_score)
 
             for oracle_name in oracle_names:

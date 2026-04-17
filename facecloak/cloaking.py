@@ -115,7 +115,9 @@ def _unit_batch_to_pil(unit_batch: torch.Tensor) -> Image.Image:
     return Image.fromarray(array, mode="RGB")
 
 
-def _clip_embedding_from_unit_batch(unit_batch: torch.Tensor, clip_model: Any) -> torch.Tensor:
+def _clip_embedding_from_unit_batch(
+    unit_batch: torch.Tensor, clip_model: Any
+) -> torch.Tensor:
     normalized = normalize_clip_pixel_values(unit_batch)
     features = clip_model.get_image_features(pixel_values=normalized)
     return F.normalize(features, p=2, dim=1)
@@ -257,13 +259,17 @@ def cloak_face_tensor(
             mode="bilinear",
             align_corners=False,
         ).to(clip_device)
-        final_clip_embedding = _clip_embedding_from_unit_batch(final_clip_batch, clip_model)
+        final_clip_embedding = _clip_embedding_from_unit_batch(
+            final_clip_batch, clip_model
+        )
         final_clip_similarity = float(
             F.cosine_similarity(
                 original_clip_embedding,
                 final_clip_embedding,
                 dim=1,
-            ).mean().item()
+            )
+            .mean()
+            .item()
         )
 
     delta_cpu = delta.detach().cpu()
@@ -323,7 +329,9 @@ def cloak_general_image(
         rgb_image,
         size=(CLIP_IMAGE_SIZE, CLIP_IMAGE_SIZE),
     ).to(clip_device)
-    original_embedding = _clip_embedding_from_unit_batch(original_224, clip_model).detach()
+    original_embedding = _clip_embedding_from_unit_batch(
+        original_224, clip_model
+    ).detach()
 
     delta = torch.zeros_like(original_224, requires_grad=True)
     loss_history: list[float] = []
@@ -335,7 +343,9 @@ def cloak_general_image(
 
         cloaked_224 = torch.clamp(original_224 + delta, 0.0, 1.0)
         cloaked_embedding = _clip_embedding_from_unit_batch(cloaked_224, clip_model)
-        cosine = F.cosine_similarity(original_embedding, cloaked_embedding, dim=1).mean()
+        cosine = F.cosine_similarity(
+            original_embedding, cloaked_embedding, dim=1
+        ).mean()
         objective = -cosine - parameters.l2_lambda * delta.pow(2).mean()
         objective.backward()
 
