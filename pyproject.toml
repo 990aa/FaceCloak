@@ -1,7 +1,7 @@
 [project]
-name = "Universal Adversarial Cloak"
+name = "universal-adversarial-cloak"
 version = "0.1.0"
-description = "Local adversarial pixel poisoning toolkit for biometric privacy preservation."
+description = "Universal Adversarial Pixel Poisoning: Defeating State-of-the-Art Recognition Systems with Verified Imperceptibility."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [

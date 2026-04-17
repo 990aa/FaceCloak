@@ -12,7 +12,7 @@ suggested_hardware: cpu-basic
 
 # Universal Adversarial Cloak
 
-[**Live Demo on Hugging Face Spaces**](https://huggingface.co/spaces/a-01a/facecloak)
+[**Live Demo on Hugging Face Spaces**](https://huggingface.co/spaces/a-01a/uacloak)
 
 **Upload any image. Watch AI similarity collapse.**
 

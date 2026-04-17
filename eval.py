@@ -1,8 +1,8 @@
-"""CLI entrypoint for FaceCloak benchmark evaluation."""
+"""CLI entrypoint for UACloak benchmark evaluation."""
 
 from __future__ import annotations
 
-from facecloak.evaluation import main
+from uacloak.evaluation import main
 
 
 if __name__ == "__main__":

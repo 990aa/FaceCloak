@@ -1,8 +1,8 @@
-"""CLI entrypoint for FaceCloak Phase 13 ablations."""
+"""CLI entrypoint for UACloak Phase 13 ablations."""
 
 from __future__ import annotations
 
-from facecloak.ablation import main
+from uacloak.ablation import main
 
 
 if __name__ == "__main__":
