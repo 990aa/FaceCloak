@@ -66,7 +66,7 @@ For a full benchmark, point `--manifest` to your 50-100 image-pair manifest.
 For fixed-condition attack benchmarks (PGD + FGSM + runtime + robustness):
 
 ```powershell
-python -m uacloak.benchmarking --manifest benchmarks/benchmarking_manifest.csv --output-csv results/benchmark_phase14_metrics.csv --output-summary results/benchmark_phase14_summary.md --output-json results/benchmark_phase14_summary.json
+python -m uacloak.benchmarking --manifest benchmarks/benchmarking_manifest.csv --output-csv results/benchmark_metrics.csv --output-summary results/benchmark_summary.md --output-json results/benchmark_summary.json
 ```
 
 Run ablations:

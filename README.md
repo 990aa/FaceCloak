@@ -43,9 +43,9 @@ uv run python scripts/download_general_images.py
 # 2) Run fixed-condition benchmark suite
 uv run python -m uacloak.benchmarking \
 	--manifest benchmarks/benchmarking_manifest.csv \
-	--output-csv results/benchmark_phase14_metrics.csv \
-	--output-summary results/benchmark_phase14_summary.md \
-	--output-json results/benchmark_phase14_summary.json
+	--output-csv results/benchmark_metrics.csv \
+	--output-summary results/benchmark_summary.md \
+	--output-json results/benchmark_summary.json
 
 # 3) Run ablations
 uv run python -m uacloak.ablation \
@@ -56,8 +56,8 @@ uv run python -m uacloak.ablation \
 # 4) Build benchmark visuals + report markdown for the UI tab
 uv run python scripts/generate_report.py \
 	--manifest benchmarks/benchmarking_manifest.csv \
-	--csv results/benchmark_phase14_metrics.csv \
-	--json results/benchmark_phase14_summary.json \
+	--csv results/benchmark_metrics.csv \
+	--json results/benchmark_summary.json \
 	--output-dir results
 ```
 
