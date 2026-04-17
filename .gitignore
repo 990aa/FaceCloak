@@ -215,3 +215,4 @@ pytest-cache*/
 PLAN.md
 scripts/
 *deploy*
+tests/test_deploy.py

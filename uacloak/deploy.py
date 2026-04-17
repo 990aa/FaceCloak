@@ -17,6 +17,8 @@ from uacloak.project import (
 )
 
 HF_TOKEN_ENV_VAR = "UACLOAK_HF_TOKEN"
+LEGACY_HF_TOKEN_ENV_VAR = "FACECLOAK_HF_TOKEN"
+HF_TOKEN_ENV_VARS = (HF_TOKEN_ENV_VAR, LEGACY_HF_TOKEN_ENV_VAR)
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,16 +50,20 @@ def read_env_file(env_path: Path | None = None) -> dict[str, str]:
 
 
 def resolve_hf_token(env_path: Path | None = None) -> str:
-    token = os.environ.get(HF_TOKEN_ENV_VAR)
-    if token:
-        return token
+    for env_key in HF_TOKEN_ENV_VARS:
+        token = os.environ.get(env_key)
+        if token:
+            return token
 
-    token = read_env_file(env_path).get(HF_TOKEN_ENV_VAR)
-    if token:
-        return token
+    env_values = read_env_file(env_path)
+    for env_key in HF_TOKEN_ENV_VARS:
+        token = env_values.get(env_key)
+        if token:
+            return token
 
     raise UACloakError(
-        f"{HF_TOKEN_ENV_VAR} was not found. Add it to the environment or to a local .env file."
+        "Hugging Face token was not found. Set one of: "
+        f"{HF_TOKEN_ENV_VAR}, {LEGACY_HF_TOKEN_ENV_VAR} (environment or .env)."
     )
 
 

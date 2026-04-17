@@ -36,16 +36,10 @@ SPACE_UPLOAD_ALLOW_PATTERNS: tuple[str, ...] = (
     "ablation.py",
     "README.md",
     "requirements.txt",
-    "pyproject.toml",
-    "uv.lock",
     "uacloak/**",
     "benchmarks/**",
-    "scripts/**",
-    "tests/**",
+    "tests/fixtures/**",
     "results/**",
-    "*.png",
-    "*.json",
-    "*.md",
 )
 
 
