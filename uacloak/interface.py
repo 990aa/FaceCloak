@@ -458,7 +458,7 @@ def compare_faces(image_a, image_b):
 
 
 def build_demo() -> gr.Blocks:  # noqa: C901
-    with gr.Blocks(title=PROJECT_NAME, theme=APP_THEME, css=APP_CSS) as demo:
+    with gr.Blocks(title=PROJECT_NAME) as demo:
         # ── Hero ─────────────────────────────────────────────────────── #
         gr.Markdown(
             """

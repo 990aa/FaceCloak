@@ -1,7 +1,8 @@
 """HuggingFace Spaces entrypoint."""
 
-from uacloak.interface import demo  # noqa: F401 — Gradio auto-discovers `demo`
+from uacloak.interface import APP_CSS, APP_THEME, demo  # noqa: F401
 
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(theme=APP_THEME, css=APP_CSS)
+

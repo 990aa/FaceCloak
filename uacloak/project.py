@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-PROJECT_NAME = "UACloak"
-PROJECT_SLUG = "uacloak"
-PROJECT_TAGLINE = "Adversarial Pixel Poisoning for Biometric Privacy Preservation"
+PROJECT_NAME = "Universal Adversarial Cloak"
+PROJECT_SLUG = "universal-adversarial-cloak"
+PROJECT_TAGLINE = "Universal Adversarial Pixel Poisoning: Defeating State-of-the-Art Recognition Systems with Verified Imperceptibility."
 PHASE_LABEL = "UACloak"
 PHASE_STATUS = "Ready"
 PHASE_SUMMARY = (
