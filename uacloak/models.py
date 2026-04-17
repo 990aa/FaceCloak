@@ -29,6 +29,9 @@ def configure_torch_cache() -> None:
     hf_cache.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("HF_HOME", str(hf_cache))
     os.environ.setdefault("TRANSFORMERS_CACHE", str(hf_cache / "transformers"))
+    # Keep hub downloads on stable HTTP paths in constrained container runtimes.
+    os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
+    os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "0")
 
 
 @lru_cache(maxsize=1)
@@ -76,7 +79,26 @@ def get_clip_model() -> Any:
     configure_torch_cache()
     from transformers import CLIPModel
 
-    model = CLIPModel.from_pretrained(CLIP_MODEL_ID, use_safetensors=True).eval()
+    load_attempts: tuple[dict[str, object], ...] = (
+        {"use_safetensors": True},
+        {"use_safetensors": False},
+        {},
+    )
+    last_error: Exception | None = None
+    model: Any | None = None
+    for kwargs in load_attempts:
+        try:
+            model = CLIPModel.from_pretrained(CLIP_MODEL_ID, **kwargs).eval()
+            break
+        except Exception as exc:
+            last_error = exc
+
+    if model is None:
+        raise RuntimeError(
+            "Unable to load CLIP model 'openai/clip-vit-base-patch32'. "
+            f"Last error: {last_error}"
+        )
+
     for parameter in model.parameters():
         parameter.requires_grad_(False)
     model.to(torch.device("cpu"))

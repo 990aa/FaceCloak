@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
 import platform
 
+from uacloak.models import get_clip_model
 from uacloak.project import TORCH_CACHE_DIR
 
 
@@ -25,6 +26,7 @@ class RuntimeReport:
     device: str
     tensor_sanity: tuple[int, ...]
     torch_cache_dir: str
+    clip_model_status: str
     status: str
     notes: str
 
@@ -44,6 +46,12 @@ def collect_runtime_report() -> RuntimeReport:
     device = "cuda" if cuda_available else "cpu"
     status = "ready" if tensor_sanity == (1, 2, 3) else "check failed"
 
+    try:
+        get_clip_model()
+        clip_model_status = "ready"
+    except Exception as exc:
+        clip_model_status = f"error: {exc}"
+
     return RuntimeReport(
         python_version=platform.python_version(),
         operating_system=platform.platform(),
@@ -59,6 +67,7 @@ def collect_runtime_report() -> RuntimeReport:
         device=device,
         tensor_sanity=tensor_sanity,
         torch_cache_dir=str(TORCH_CACHE_DIR),
+        clip_model_status=clip_model_status,
         status=status,
         notes="CPU execution is the intended deployment target for the Hugging Face Space.",
     )
@@ -86,6 +95,7 @@ def format_runtime_markdown(report: RuntimeReport) -> str:
             f"- Active Device: `{report.device}`",
             f"- Tensor Sanity: `[{tensor_label}]`",
             f"- Torch Cache: `{report.torch_cache_dir}`",
+            f"- CLIP Model: `{report.clip_model_status}`",
             f"- Notes: {report.notes}",
         ]
     )
