@@ -1,7 +1,6 @@
-"""User-facing exceptions for UACloak workflows."""
+"""Backward-compatible error exports."""
 
-from __future__ import annotations
+from visioncloak.errors import UACloakError, VisionCloakError
 
+__all__ = ["UACloakError", "VisionCloakError"]
 
-class UACloakError(RuntimeError):
-    """A readable error that can be surfaced directly in the UI."""

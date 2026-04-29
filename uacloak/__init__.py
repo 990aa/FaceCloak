@@ -1,3 +1,4 @@
-"""UACloak package."""
+"""Backward-compatible UACloak namespace."""
 
-__version__ = "0.1.0"
+from visioncloak import __version__
+
