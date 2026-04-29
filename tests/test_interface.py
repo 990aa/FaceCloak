@@ -3,24 +3,19 @@
 from __future__ import annotations
 
 import gradio as gr
-from PIL import Image
 
-from uacloak.interface import build_demo
-from uacloak.project import PROJECT_NAME
+from visioncloak.interface import build_demo, generate_cloak
+from visioncloak.project import PROJECT_NAME
 
 
 def test_build_demo_returns_gradio_blocks_with_project_title() -> None:
     demo = build_demo()
-
     assert isinstance(demo, gr.Blocks)
     assert demo.title == PROJECT_NAME
 
 
 def test_generate_cloak_raises_gracefully_when_image_is_none() -> None:
-    """generate_cloak must raise gr.Error for missing input (Step 30)."""
-    from uacloak.interface import generate_cloak
-
-    gen = generate_cloak(None, 0.03, 20, 0.1)
+    gen = generate_cloak(None, ["clip_l14", "siglip", "dinov2"], 0.05, 20, 0.25, True, True)
     try:
         next(gen)
         raise AssertionError("Expected gr.Error to be raised")
@@ -28,41 +23,12 @@ def test_generate_cloak_raises_gracefully_when_image_is_none() -> None:
         assert "No image provided" in str(exc)
 
 
-def test_compare_faces_requires_both_images() -> None:
-    from uacloak.interface import compare_faces
-
-    blank = Image.new("RGB", (16, 16), "white")
-    try:
-        compare_faces(blank, None)
-    except gr.Error as exc:
-        assert "Please provide both images" in str(exc)
-    else:
-        raise AssertionError("compare_faces should reject missing inputs.")
-
-
-def test_interface_has_no_phase_references() -> None:
-    """The interface markdown copy must not mention phase numbers."""
-    from uacloak.interface import build_demo
-
-    demo = build_demo()
-    # The demo object doesn't expose raw text easily; check the source module
+def test_interface_source_mentions_unified_flow_and_compression_tab() -> None:
     import inspect
-    from uacloak import interface
+    from visioncloak import interface
 
     source = inspect.getsource(interface)
-    # Should not contain "Academic", "Academic" etc. in user-facing strings
-    import re
+    assert "Compression Test" in source
+    assert "Surrogate Models" in source
+    assert "one unified cloaking flow" in source
 
-    matches = re.findall(r"\bPhase [0-9]\b", source)
-    # Allow zero matches
-    assert len(matches) == 0, f"Found phase number references in interface: {matches}"
-
-
-def test_interface_mentions_scope_copy() -> None:
-    import inspect
-    from uacloak import interface
-
-    source = inspect.getsource(interface)
-    assert "### Scope" in source
-    assert "faces and non-faces" in source
-    assert "documented in the repository README" in source

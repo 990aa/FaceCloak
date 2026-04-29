@@ -106,7 +106,7 @@ def test_classify_image_type_routes_face_when_confident() -> None:
     )
     assert result.image_type == "face"
     assert result.detected_face is not None
-    assert "FaceNet + CLIP" in result.display_label
+    assert "optional FaceNet surrogate" in result.display_label
 
 
 def test_classify_image_type_routes_general_when_not_confident() -> None:

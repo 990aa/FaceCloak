@@ -1,14 +1,16 @@
-"""Tests for benchmark evaluation utilities."""
+"""Tests for updated evaluation utilities."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 from PIL import Image
+import pytest
 
 from uacloak.evaluation import (
     BenchmarkMetrics,
     compute_ssim_score,
+    evaluate_cloak_pair,
     load_manifest,
     summarize_metrics,
     write_metrics_csv,
@@ -44,6 +46,21 @@ def test_compute_ssim_score_is_one_for_identical_images() -> None:
     assert score == 1.0
 
 
+def test_evaluate_cloak_pair_returns_mean_and_success_fields(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "visioncloak.evaluation._available_oracle_scores",
+        lambda *_args, **_kwargs: {"clip_l14": 0.65, "siglip": 0.60},
+    )
+    original = Image.new("RGB", (16, 16), "white")
+    cloaked = Image.new("RGB", (16, 16), "white")
+    evaluation = evaluate_cloak_pair(original, cloaked)
+
+    assert "clip_l14" in evaluation.per_oracle
+    assert "siglip" in evaluation.per_oracle
+    assert evaluation.mean_cosine_similarity >= 0.0
+    assert isinstance(evaluation.success, bool)
+
+
 def test_write_metrics_csv_contains_required_columns(tmp_path: Path) -> None:
     metrics = [
         BenchmarkMetrics(
@@ -60,6 +77,9 @@ def test_write_metrics_csv_contains_required_columns(tmp_path: Path) -> None:
             ssim_pass=True,
             oracle_transfer_success=True,
             near_duplicate_clean_pass=False,
+            success=True,
+            per_oracle_breakdown={"clip_l14": 0.18, "siglip": 0.17},
+            clean_per_oracle_breakdown={"clip_l14": 0.94, "siglip": 0.95},
             error=None,
         )
     ]
@@ -90,6 +110,9 @@ def test_summarize_metrics_computes_expected_rates() -> None:
             ssim_pass=True,
             oracle_transfer_success=True,
             near_duplicate_clean_pass=True,
+            success=True,
+            per_oracle_breakdown={"clip_l14": 0.30, "siglip": 0.31},
+            clean_per_oracle_breakdown={"clip_l14": 0.92, "siglip": 0.93},
             error=None,
         ),
         BenchmarkMetrics(
@@ -106,6 +129,9 @@ def test_summarize_metrics_computes_expected_rates() -> None:
             ssim_pass=False,
             oracle_transfer_success=True,
             near_duplicate_clean_pass=False,
+            success=False,
+            per_oracle_breakdown={"clip_l14": 0.50, "siglip": 0.52, "facenet": 0.48},
+            clean_per_oracle_breakdown={"clip_l14": 0.85, "siglip": 0.84, "facenet": 0.86},
             error=None,
         ),
     ]
@@ -116,3 +142,4 @@ def test_summarize_metrics_computes_expected_rates() -> None:
     assert summary["num_valid_rows"] == 2
     assert summary["num_failed_rows"] == 0
     assert summary["oracle_transfer_success_rate"] == 1.0
+    assert summary["success_rate"] == 0.5

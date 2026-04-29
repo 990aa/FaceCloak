@@ -1,8 +1,8 @@
-"""CLI entrypoint for UACloak benchmark evaluation."""
+"""CLI entrypoint for VisionCloak benchmark evaluation."""
 
 from __future__ import annotations
 
-from uacloak.evaluation import main
+from visioncloak.evaluation import main
 
 
 if __name__ == "__main__":
